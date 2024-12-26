@@ -1,0 +1,64 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Demo with htmx</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debug SSE events
+            document.body.addEventListener('htmx:sseBeforeMessage', function (e) {
+                console.log('SSE Before Message:', {
+                    event: e.detail.event,
+                    data: e.detail.data,
+                    target: e.detail.elt,
+                    swap: e.detail.swap
+                });
+            });
+
+            document.body.addEventListener('htmx:sseMessage', function (e) {
+                console.log('SSE Message Completed:', {
+                    event: e.detail.event,
+                    data: e.detail.data,
+                    target: e.detail.elt
+                });
+            });
+
+            document.body.addEventListener('htmx:sseError', function (e) {
+                console.error('SSE Error:', e.detail);
+            });
+
+            document.body.addEventListener('htmx:sseOpen', function (e) {
+                console.log('SSE Connection Opened:', {
+                    source: e.detail.source,
+                    target: e.detail.elt
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Server-Sent Events Demo</h1>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn"
+                    hx-get="/start-sse"
+                    hx-swap="innerHTML"
+                    hx-target="#sse-container">
+                Start Events
+            </button>
+        </div>
+
+        <!-- SSE container will be replaced by the /start-sse endpoint -->
+        <div id="sse-container">
+            <div class="initial-state">
+                Click "Start Events" to begin receiving real-time updates
+            </div>
+        </div>
+    </div>
+</body>
+</html>
