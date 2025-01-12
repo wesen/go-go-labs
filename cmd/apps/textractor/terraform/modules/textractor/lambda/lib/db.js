@@ -11,9 +11,10 @@ async function updateJobStatus(JobID, status, additionalData = {}) {
         Key: {
             JobID
         },
-        UpdateExpression: 'SET #status = :status, UpdatedAt = :updatedAt',
+        UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
         ExpressionAttributeNames: {
-            '#status': 'Status'
+            '#status': 'Status',
+            '#updatedAt': 'UpdatedAt'
         },
         ExpressionAttributeValues: {
             ':status': status,
@@ -24,8 +25,12 @@ async function updateJobStatus(JobID, status, additionalData = {}) {
     // Add additional data to update expression if provided
     if (Object.keys(additionalData).length > 0) {
         Object.entries(additionalData).forEach(([key, value]) => {
-            params.UpdateExpression += `, ${key} = :${key}`;
-            params.ExpressionAttributeValues[`:${key}`] = value;
+            // Use expression attribute names for all fields to avoid reserved word issues
+            const attributeKey = `#${key}`;
+            const attributeValue = `:${key}`;
+            params.UpdateExpression += `, ${attributeKey} = ${attributeValue}`;
+            params.ExpressionAttributeNames[attributeKey] = key;
+            params.ExpressionAttributeValues[attributeValue] = value;
         });
     }
 

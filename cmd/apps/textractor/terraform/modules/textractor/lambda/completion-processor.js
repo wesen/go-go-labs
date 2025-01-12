@@ -7,6 +7,28 @@ const s3 = new AWS.S3();
 // Add prefix to all console.log calls
 const logPrefix = '[completion-processor]';
 
+// Retry configuration
+const MAX_RETRIES = 5;
+const BASE_DELAY_MS = 1000;
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getTextractResultsWithRetry(params, attempt = 1) {
+    try {
+        return await textract.getDocumentAnalysis(params).promise();
+    } catch (err) {
+        if (err.code === 'ProvisionedThroughputExceededException' && attempt < MAX_RETRIES) {
+            const delayMs = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+            console.log(`${logPrefix} Rate limited, attempt ${attempt}/${MAX_RETRIES}. Retrying in ${delayMs}ms`);
+            await sleep(delayMs);
+            return getTextractResultsWithRetry(params, attempt + 1);
+        }
+        throw err;
+    }
+}
+
 async function getTextractResults(textractJobId) {
     const results = [];
     let nextToken = null;
@@ -19,7 +41,7 @@ async function getTextractResults(textractJobId) {
         };
 
         console.log(`${logPrefix} Getting results for job ${textractJobId} with params:`, JSON.stringify(params));
-        const response = await textract.getDocumentAnalysis(params).promise();
+        const response = await getTextractResultsWithRetry(params);
         results.push(...response.Blocks);
         nextToken = response.NextToken;
     } while (nextToken);
