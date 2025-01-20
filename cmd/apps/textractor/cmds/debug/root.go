@@ -25,6 +25,7 @@ func NewDebugCommand() *cobra.Command {
 		newDumpCommand(),
 		newCSVCommand(),
 		newDynamoCommand(),
+		newBoACommand(),
 	)
 
 	return debugCmd

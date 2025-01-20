@@ -20,7 +20,7 @@ import (
 type SearchCommand struct {
 	*cmds.CommandDescription
 	embedder              *pkg.Embedder
-	AnswerQuestionCommand *geppetto_cmds.GeppettoCommand
+	AnswerQuestionCommand *geppetto_cmds.PinocchioCommand
 }
 
 type SearchSettings struct {

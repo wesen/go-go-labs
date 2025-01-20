@@ -59,6 +59,7 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
+	github.com/stretchr/testify v1.9.0
 	github.com/tdewolff/parse/v2 v2.6.8
 	github.com/tiktoken-go/tokenizer v0.2.0
 	github.com/weaviate/tiktoken-go v0.0.2
@@ -98,12 +99,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.7 // indirect
 	github.com/aws/smithy-go v1.22.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-go-golems/bobatea v0.0.11 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/terraform-json v0.22.1 // indirect
 	github.com/huandu/go-clone v1.7.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sashabaranov/go-openai v1.32.3 // indirect

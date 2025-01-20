@@ -41,9 +41,13 @@ func newCSVCommand() *cobra.Command {
 				return fmt.Errorf("writing lines CSV header: %w", err)
 			}
 
-			// Map to store tables by their header signature
-			tablesByHeader := make(map[string][][]string)
-			tablesHeaderKeys := []string{}
+			// Replace the tablesByHeader map with a slice to maintain order
+			type TableData struct {
+				headers    []string
+				rows       [][]string
+				sourceInfo []string // Store file and page information
+			}
+			var tables []TableData
 
 			// Process all input files
 			for _, file := range args {
@@ -77,22 +81,18 @@ func newCSVCommand() *cobra.Command {
 							var dataRows []parser.TableRow
 
 							if headerCells != nil {
-								// Use header cells
 								headerRow = make([]string, len(headerCells))
 								for i, cell := range headerCells {
 									headerRow[i] = strings.TrimSpace(cell.Text())
 								}
 								dataRows = table.Rows()[1:] // Skip header row
 							} else {
-								// Generate numeric headers
 								headerRow = make([]string, table.ColumnCount())
 								for i := range headerRow {
 									headerRow[i] = fmt.Sprintf("Column%d", i+1)
 								}
 								dataRows = table.Rows() // Use all rows
 							}
-
-							headerKey := strings.Join(headerRow, "|")
 
 							// Convert rows to string matrix
 							var rows [][]string
@@ -104,16 +104,33 @@ func newCSVCommand() *cobra.Command {
 								rows = append(rows, stringRow)
 							}
 
-							// Add to map, creating a new entry if it's not the same as the last table
-							if len(tablesHeaderKeys) > 0 && tablesHeaderKeys[len(tablesHeaderKeys)-1] == headerKey {
-								// Append to the last table if headers match
-								lastKey := tablesHeaderKeys[len(tablesHeaderKeys)-1]
-								tablesByHeader[lastKey] = append(tablesByHeader[lastKey], rows...)
-							} else {
-								// Create new table entry
-								tablesByHeader[headerKey] = append([][]string{headerRow}, rows...)
-								tablesHeaderKeys = append(tablesHeaderKeys, headerKey)
+							sourceInfo := fmt.Sprintf("# Source: %s, Page: %d", file, page.Number())
+
+							// Check if we can append to the last table
+							if len(tables) > 0 {
+								lastTable := &tables[len(tables)-1]
+								if len(lastTable.headers) == len(headerRow) {
+									match := true
+									for i := range headerRow {
+										if lastTable.headers[i] != headerRow[i] {
+											match = false
+											break
+										}
+									}
+									if match {
+										lastTable.rows = append(lastTable.rows, rows...)
+										lastTable.sourceInfo = append(lastTable.sourceInfo, sourceInfo)
+										continue
+									}
+								}
 							}
+
+							// Create new table entry
+							tables = append(tables, TableData{
+								headers:    headerRow,
+								rows:       rows,
+								sourceInfo: []string{sourceInfo},
+							})
 						}
 					}
 				}
@@ -130,10 +147,9 @@ func newCSVCommand() *cobra.Command {
 				baseFile = "output.csv"
 			}
 
-			for i, headerKey := range tablesHeaderKeys {
-				table := tablesByHeader[headerKey]
+			for i, table := range tables {
 				filename := baseFile
-				if len(tablesByHeader) > 1 {
+				if len(tables) > 1 {
 					filename = fmt.Sprintf("%s-%d%s", base, i+1, ext)
 				}
 
@@ -143,9 +159,19 @@ func newCSVCommand() *cobra.Command {
 				}
 				defer f.Close()
 
+				// Write source information as comments
+				for _, info := range table.sourceInfo {
+					if _, err := fmt.Fprintln(f, info); err != nil {
+						return fmt.Errorf("writing source info to %s: %w", filename, err)
+					}
+				}
+
 				w := csv.NewWriter(f)
-				if err := w.WriteAll(table); err != nil {
-					return fmt.Errorf("writing CSV to %s: %w", filename, err)
+				if err := w.Write(table.headers); err != nil {
+					return fmt.Errorf("writing headers to %s: %w", filename, err)
+				}
+				if err := w.WriteAll(table.rows); err != nil {
+					return fmt.Errorf("writing rows to %s: %w", filename, err)
 				}
 				w.Flush()
 

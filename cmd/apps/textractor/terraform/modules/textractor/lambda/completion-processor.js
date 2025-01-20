@@ -29,7 +29,7 @@ async function getTextractResultsWithRetry(params, attempt = 1) {
     }
 }
 
-async function getTextractResults(textractJobId) {
+textractor --config textractor-config.json list --since today --output json --status COMPLETED > job-status.jsonasync function getTextractResults(textractJobId) {
     const results = [];
     let nextToken = null;
 
