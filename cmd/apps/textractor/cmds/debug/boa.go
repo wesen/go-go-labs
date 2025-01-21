@@ -108,6 +108,16 @@ func newBoACommand() *cobra.Command {
 				return fmt.Errorf("at least one input file is required")
 			}
 
+			// If no output directory specified, use first input file's directory + "boa-output/"
+			if outputDir == "" {
+				outputDir = filepath.Join(filepath.Dir(args[0]), "boa-output")
+			}
+
+			// Create output directory if it doesn't exist
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				return fmt.Errorf("creating output directory: %w", err)
+			}
+
 			processor := boa.NewProcessor()
 
 			// Process all input files
@@ -115,6 +125,7 @@ func newBoACommand() *cobra.Command {
 				ext := filepath.Ext(file)
 				var err error
 
+				fmt.Printf("Processing %s...\n", file)
 				switch ext {
 				case ".csv":
 					err = processCSVFile(processor, file)
@@ -129,15 +140,58 @@ func newBoACommand() *cobra.Command {
 				}
 			}
 
-			// Write output files
+			// Print summary for each account
+			for accNum, acc := range processor.GetAccounts() {
+				fmt.Printf("\nAccount: %s (found on page %d)\n", accNum, acc.DetailsPage)
+
+				summary := processor.GetAccountSummary(accNum)
+				if summary != nil {
+					fmt.Printf("Statement period: %s\n", summary.Period)
+
+					txns := processor.GetTransactions(accNum)
+					var deposits, withdrawals, fees int
+					for _, tx := range txns {
+						switch tx.Type {
+						case boa.TransactionDeposit:
+							deposits++
+						case boa.TransactionWithdrawal:
+							withdrawals++
+						case boa.TransactionServiceFee:
+							fees++
+						}
+					}
+
+					fmt.Printf("Transactions:\n")
+					fmt.Printf("- Deposits: %d transactions totaling $%.2f\n", deposits, summary.DepositsTotal)
+					fmt.Printf("- Withdrawals: %d transactions totaling $%.2f\n", withdrawals, summary.WithdrawalsTotal)
+					fmt.Printf("- Service fees: %d transactions totaling $%.2f\n", fees, summary.ServiceFeesTotal)
+
+					// Validate totals
+					if err := processor.ValidateSummaryTotals(accNum); err != nil {
+						fmt.Printf("⚠️  Warning: %v\n", err)
+					} else {
+						fmt.Printf("✅ All totals validated successfully\n")
+					}
+				}
+			}
+
+			// Write output files and print their locations
 			if err := processor.WriteOutput(outputDir); err != nil {
 				return fmt.Errorf("writing output: %w", err)
+			}
+
+			fmt.Printf("\nOutput files written to:\n")
+			for accNum := range processor.GetAccounts() {
+				fmt.Printf("- Summary: %s\n", filepath.Join(outputDir, fmt.Sprintf("summary-%s.json", accNum)))
+				fmt.Printf("- Deposits: %s\n", filepath.Join(outputDir, fmt.Sprintf("deposits-%s.csv", accNum)))
+				fmt.Printf("- Withdrawals: %s\n", filepath.Join(outputDir, fmt.Sprintf("withdrawals-%s.csv", accNum)))
+				fmt.Printf("- Service fees: %s\n", filepath.Join(outputDir, fmt.Sprintf("service-fees-%s.csv", accNum)))
 			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".", "Directory to write output files")
+	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "Directory to write output files (default: input-file-dir/boa-output)")
 	return cmd
 }

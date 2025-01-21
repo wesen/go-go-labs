@@ -313,3 +313,146 @@ func TestAnonymization(t *testing.T) {
 		assert.Equal(t, tc.expected, result)
 	}
 }
+
+func TestAccountSummaryParsing(t *testing.T) {
+	p := NewProcessor()
+
+	// Setup test data with anonymized account summary
+	lines := []Line{
+		{Page: 1, LineNumber: 1, Text: "Account number: 1234 5678 9012"},
+		{Page: 1, LineNumber: 2, Text: "Your Adv Plus Banking"},
+		{Page: 1, LineNumber: 3, Text: "Preferred Rewards Platinum"},
+		{Page: 1, LineNumber: 4, Text: "Account summary"},
+		{Page: 1, LineNumber: 5, Text: "Beginning balance on December 28, 2023"},
+		{Page: 1, LineNumber: 6, Text: "$33,192.29"},
+		{Page: 1, LineNumber: 7, Text: "Deposits and other additions"},
+		{Page: 1, LineNumber: 8, Text: "13,067.36"},
+		{Page: 1, LineNumber: 9, Text: "Withdrawals and other subtractions"},
+		{Page: 1, LineNumber: 10, Text: "-35,749.10"},
+		{Page: 1, LineNumber: 11, Text: "Checks"},
+		{Page: 1, LineNumber: 12, Text: "-0.00"},
+		{Page: 1, LineNumber: 13, Text: "Service fees"},
+		{Page: 1, LineNumber: 14, Text: "-173.07"},
+		{Page: 1, LineNumber: 15, Text: "Ending balance on January 29, 2024"},
+		{Page: 1, LineNumber: 16, Text: "$10,337.48"},
+	}
+
+	for _, line := range lines {
+		err := p.ProcessLine(line)
+		assert.NoError(t, err)
+	}
+
+	// Get account summary
+	summary := p.GetAccountSummary("123456789012")
+	assert.NotNil(t, summary)
+
+	// Verify summary details
+	assert.Equal(t, 33192.29, summary.BeginBalance)
+	assert.Equal(t, 10337.48, summary.EndBalance)
+
+	// Verify parsed totals
+	assert.Equal(t, 13067.36, summary.ParsedDepositsTotal)
+	assert.Equal(t, -35749.10, summary.ParsedWithdrawalsTotal)
+	assert.Equal(t, -173.07, summary.ParsedServiceFeesTotal)
+
+	// Verify account details
+	account := p.GetAccounts()["123456789012"]
+	assert.NotNil(t, account)
+	assert.Equal(t, "Adv Plus Banking", account.Type)
+	assert.Equal(t, 10337.48, account.Balance)
+
+	// Verify balance equation
+	expectedEndBalance := summary.BeginBalance +
+		summary.ParsedDepositsTotal +
+		summary.ParsedWithdrawalsTotal +
+		summary.ParsedServiceFeesTotal
+	assert.InDelta(t, expectedEndBalance, summary.EndBalance, 0.01)
+}
+
+func TestSummaryValidation(t *testing.T) {
+	p := NewProcessor()
+
+	// Setup test data with both transactions and summary section
+	lines := []Line{
+		{Page: 1, LineNumber: 1, Text: "Account number: " + testAccount1},
+
+		// Account summary section
+		{Page: 1, LineNumber: 2, Text: "Beginning balance on December 28, 2023"},
+		{Page: 1, LineNumber: 3, Text: "$1,000.00"},
+		{Page: 1, LineNumber: 4, Text: "Deposits and other additions"},
+		{Page: 1, LineNumber: 5, Text: "2,500.00"},
+		{Page: 1, LineNumber: 6, Text: "Withdrawals and other subtractions"},
+		{Page: 1, LineNumber: 7, Text: "-1,200.00"},
+		{Page: 1, LineNumber: 8, Text: "Service fees"},
+		{Page: 1, LineNumber: 9, Text: "-12.00"},
+		{Page: 1, LineNumber: 10, Text: "Ending balance on January 29, 2024"},
+		{Page: 1, LineNumber: 11, Text: "$2,288.00"},
+
+		// Actual transactions
+		{Page: 1, LineNumber: 12, Text: "Deposits and other additions"},
+		{Page: 1, LineNumber: 13, Text: "01/02/24"},
+		{Page: 1, LineNumber: 14, Text: "DIRECT DEPOSIT"},
+		{Page: 1, LineNumber: 15, Text: "2,500.00"},
+
+		{Page: 1, LineNumber: 16, Text: "Withdrawals and other subtractions"},
+		{Page: 1, LineNumber: 17, Text: "01/03/24"},
+		{Page: 1, LineNumber: 18, Text: "ATM WITHDRAWAL"},
+		{Page: 1, LineNumber: 19, Text: "-1,200.00"},
+
+		{Page: 1, LineNumber: 20, Text: "Service fees"},
+		{Page: 1, LineNumber: 21, Text: "01/04/24"},
+		{Page: 1, LineNumber: 22, Text: "MONTHLY FEE"},
+		{Page: 1, LineNumber: 23, Text: "-12.00"},
+	}
+
+	for _, line := range lines {
+		err := p.ProcessLine(line)
+		assert.NoError(t, err)
+	}
+
+	// First verify individual transactions
+	txns := p.GetTransactions("111122223333")
+	assert.Len(t, txns, 3, "Should have exactly 3 transactions")
+
+	// Verify deposit transaction
+	assert.Equal(t, TransactionDeposit, txns[0].Type)
+	assert.Equal(t, time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC), txns[0].Date)
+	assert.Equal(t, "DIRECT DEPOSIT", txns[0].Description)
+	assert.Equal(t, 2500.00, txns[0].Amount)
+
+	// Verify withdrawal transaction
+	assert.Equal(t, TransactionWithdrawal, txns[1].Type)
+	assert.Equal(t, time.Date(2024, 1, 3, 0, 0, 0, 0, time.UTC), txns[1].Date)
+	assert.Equal(t, "ATM WITHDRAWAL", txns[1].Description)
+	assert.Equal(t, -1200.00, txns[1].Amount)
+
+	// Verify service fee transaction
+	assert.Equal(t, TransactionServiceFee, txns[2].Type)
+	assert.Equal(t, time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC), txns[2].Date)
+	assert.Equal(t, "MONTHLY FEE", txns[2].Description)
+	assert.Equal(t, -12.00, txns[2].Amount)
+
+	// Get account summary
+	summary := p.GetAccountSummary("111122223333")
+	assert.NotNil(t, summary)
+
+	// Verify parsed totals
+	assert.Equal(t, 1000.00, summary.BeginBalance)
+	assert.Equal(t, 2500.00, summary.ParsedDepositsTotal)
+	assert.Equal(t, -1200.00, summary.ParsedWithdrawalsTotal)
+	assert.Equal(t, -12.00, summary.ParsedServiceFeesTotal)
+	assert.Equal(t, 2288.00, summary.EndBalance)
+
+	// Verify calculated totals match parsed totals
+	assert.Equal(t, summary.ParsedDepositsTotal, summary.DepositsTotal)
+	assert.Equal(t, summary.ParsedWithdrawalsTotal, summary.WithdrawalsTotal)
+	assert.Equal(t, summary.ParsedServiceFeesTotal, summary.ServiceFeesTotal)
+
+	// Validate totals using the validation methods
+	assert.NoError(t, p.ValidateSummaryTotals("111122223333"))
+	assert.NoError(t, p.ValidateParsedTotals("111122223333"))
+
+	// Test validation with mismatched data
+	p.summaries["111122223333"].ParsedDepositsTotal += 0.01
+	assert.Error(t, p.ValidateParsedTotals("111122223333"))
+}

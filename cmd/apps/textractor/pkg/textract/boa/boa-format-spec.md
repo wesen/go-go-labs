@@ -78,6 +78,11 @@ type AccountSummary struct {
     DepositsTotal   float64
     WithdrawalsTotal float64
     ServiceFeesTotal float64
+    
+    // New fields to track parsed vs calculated totals
+    ParsedDepositsTotal    float64
+    ParsedWithdrawalsTotal float64
+    ParsedServiceFeesTotal float64
 }
 ```
 
@@ -228,14 +233,43 @@ type ProcessingError struct {
 1. All amounts must parse to valid float64
 2. All dates must parse to valid time.Time
 3. Account numbers must be properly normalized
-4. Transaction totals must match summary totals
+4. Transaction totals must match summary totals:
+   - Calculated totals from individual transactions
+   - Parsed totals from summary section
+   - Both should match and be validated
 5. Beginning + Credits - Debits = Ending balance
 
-### 8.2 Structural Validation
-1. Pages must be sequential
-2. Line numbers must be sequential within page
-3. Sections must be properly bounded
-4. Multi-line entries must be complete
-5. All transactions must have required fields
+### 8.2 Summary Validation Rules
+1. Store both parsed and calculated totals separately
+2. When processing summary section:
+   - Parse "Deposits and other additions" total into ParsedDepositsTotal
+   - Parse "Withdrawals and other subtractions" total into ParsedWithdrawalsTotal
+   - Parse "Service fees" total into ParsedServiceFeesTotal
+3. When processing transactions:
+   - Accumulate into DepositsTotal, WithdrawalsTotal, ServiceFeesTotal
+4. Validate that parsed totals match calculated totals within epsilon (0.01)
+5. Report discrepancies with detailed breakdown of differences
+
+### 8.3 Summary Section Format
+```
+Account summary
+Beginning balance on [Date]              $X,XXX.XX
+Deposits and other additions             $X,XXX.XX
+Withdrawals and other subtractions      -$X,XXX.XX
+Checks                                  -$X,XXX.XX
+Service fees                            -$X,XXX.XX
+Ending balance on [Date]                 $X,XXX.XX
+```
+
+### 8.4 Validation Methods
+```go
+// ValidateSummaryTotals checks if transaction totals match summary amounts
+// Returns nil if totals match, otherwise returns error with details
+func (p *StatementProcessor) ValidateSummaryTotals(accountNumber string) error
+
+// ValidateParsedTotals checks if parsed summary totals match calculated totals
+// Returns nil if totals match, otherwise returns error with details
+func (p *StatementProcessor) ValidateParsedTotals(accountNumber string) error
+```
 
 This specification provides a complete framework for processing bank statement data from the CSV format while maintaining accuracy and proper organization of financial information.

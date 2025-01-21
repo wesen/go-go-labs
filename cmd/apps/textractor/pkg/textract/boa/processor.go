@@ -2,19 +2,13 @@ package boa
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
-)
-
-// Constants for section headers
-const (
-	SectionDeposits    = "deposits"
-	SectionWithdrawals = "withdrawals"
-	SectionServiceFees = "fees"
 )
 
 type TransactionType string
@@ -54,15 +48,32 @@ type AccountSummary struct {
 	DepositsTotal    float64
 	WithdrawalsTotal float64
 	ServiceFeesTotal float64
+
+	// New fields for parsed totals
+	ParsedDepositsTotal    float64
+	ParsedWithdrawalsTotal float64
+	ParsedServiceFeesTotal float64
 }
+
+// Section represents different parts of the statement
+type Section string
+
+const (
+	SectionUnknown     Section = ""
+	SectionSummary     Section = "summary"
+	SectionDeposits    Section = "deposits"
+	SectionWithdrawals Section = "withdrawals"
+	SectionServiceFees Section = "fees"
+)
 
 // ProcessorState tracks the current state during processing
 type ProcessorState struct {
 	CurrentAccount     string
-	CurrentSection     string // "deposits", "withdrawals", "fees"
+	CurrentSection     Section // Use the Section type
 	CurrentTransaction *Transaction
 	PageContext        int
 	LastLineNumber     int
+	expectingAmount    string // New field to track expected amount type
 }
 
 // StatementProcessor processes bank statements
@@ -76,9 +87,12 @@ type StatementProcessor struct {
 // Regular expressions for pattern matching
 var (
 	accountNumberPattern = regexp.MustCompile(`Account (?:number:|#) (\d{4} \d{4} \d{4})`)
-	datePattern          = regexp.MustCompile(`^(\d{2}/\d{2}/\d{2})`) // Must be at start of line
-	amountPattern        = regexp.MustCompile(`^[-$(),.0-9]+$`)       // Must be entire line
+	datePattern          = regexp.MustCompile(`^(\d{2}/\d{2}/\d{2})`)   // Must be at start of line
+	amountPattern        = regexp.MustCompile(`^\(?[-$]?\d+(?:,\d{3})*\.\d{2}\)?$`) // Matches ($1,234.56), -$1,234.56, 1,234.56 etc
 	periodPattern        = regexp.MustCompile(`for ([A-Za-z]+ \d{1,2}, \d{4}) to ([A-Za-z]+ \d{1,2}, \d{4})`)
+	beginBalancePattern  = regexp.MustCompile(`Beginning balance on (.+)`)
+	endBalancePattern    = regexp.MustCompile(`Ending balance on (.+)`)
+	accountTypePattern   = regexp.MustCompile(`Your (.*Banking)`)
 )
 
 // NewProcessor creates a new StatementProcessor
@@ -114,6 +128,94 @@ func normalizeAccountNumber(accNum string) string {
 
 // ProcessLine processes a single line from the CSV
 func (p *StatementProcessor) ProcessLine(line Line) error {
+	logger := log.With().
+		Int("page", line.Page).
+		Int("line", line.LineNumber).
+		Str("text", line.Text).
+		Logger()
+
+	// Check for beginning of summary section
+	if match := beginBalancePattern.FindStringSubmatch(line.Text); match != nil {
+		logger.Debug().Msg("Entering summary section")
+		p.state.CurrentSection = SectionSummary
+		p.state.expectingAmount = "begin_balance"
+		return nil
+	}
+
+	// Check for end of summary section
+	if match := endBalancePattern.FindStringSubmatch(line.Text); match != nil {
+		logger.Debug().Msg("Processing end balance")
+		p.state.expectingAmount = "end_balance"
+		return nil
+	}
+
+	// Process section headers based on current section
+	if p.state.CurrentSection == SectionSummary {
+		switch {
+		case strings.Contains(line.Text, "Deposits and other additions"):
+			logger.Debug().Msg("Processing summary deposits section")
+			p.state.expectingAmount = "deposits_total"
+			return nil
+		case strings.Contains(line.Text, "Withdrawals and other subtractions"):
+			logger.Debug().Msg("Processing summary withdrawals section")
+			p.state.expectingAmount = "withdrawals_total"
+			return nil
+		case strings.Contains(line.Text, "Service fees"):
+			logger.Debug().Msg("Processing summary service fees section")
+			p.state.expectingAmount = "fees_total"
+			return nil
+		}
+
+		// Handle expected amounts
+		if p.state.expectingAmount != "" && p.state.CurrentAccount != "" {
+			if amount, ok := p.tryParseAmount(line.Text); ok {
+				summary := p.summaries[p.state.CurrentAccount]
+				if summary == nil {
+					summary = &AccountSummary{AccountNumber: p.state.CurrentAccount}
+					p.summaries[p.state.CurrentAccount] = summary
+				}
+
+				switch p.state.expectingAmount {
+				case "begin_balance":
+					summary.BeginBalance = amount
+				case "end_balance":
+					summary.EndBalance = amount
+					if acc := p.accounts[p.state.CurrentAccount]; acc != nil {
+						acc.Balance = amount
+					}
+					// Exit summary section after processing end balance
+					p.state.CurrentSection = SectionUnknown
+				case "deposits_total":
+					summary.ParsedDepositsTotal = amount
+				case "withdrawals_total":
+					summary.ParsedWithdrawalsTotal = amount
+				case "fees_total":
+					summary.ParsedServiceFeesTotal = amount
+				}
+				p.state.expectingAmount = ""
+				return nil
+			}
+		}
+	}
+
+	// Only process transaction sections when not in summary
+	if p.state.CurrentSection != SectionSummary {
+		switch {
+		case strings.Contains(line.Text, "Deposits and other additions"):
+			logger.Debug().Msg("Entering deposits transaction section")
+			p.state.CurrentSection = SectionDeposits
+			return nil
+		case strings.Contains(line.Text, "Withdrawals and other subtractions"):
+			logger.Debug().Msg("Entering withdrawals transaction section")
+			p.state.CurrentSection = SectionWithdrawals
+			return nil
+		case strings.Contains(line.Text, "Service fees"):
+			logger.Debug().Msg("Entering service fees transaction section")
+			p.state.CurrentSection = SectionServiceFees
+			return nil
+		}
+	}
+
 	// Anonymize any account numbers in the line text for logging
 	logText := accountNumberPattern.ReplaceAllStringFunc(line.Text, func(match string) string {
 		if groups := accountNumberPattern.FindStringSubmatch(match); len(groups) > 1 {
@@ -122,11 +224,11 @@ func (p *StatementProcessor) ProcessLine(line Line) error {
 		return match
 	})
 
-	logger := log.With().
+	logger.Debug().
 		Int("page", line.Page).
 		Int("line", line.LineNumber).
 		Str("text", logText).
-		Logger()
+		Msg("Processing line")
 
 	// Update state
 	p.state.PageContext = line.Page
@@ -167,24 +269,16 @@ func (p *StatementProcessor) ProcessLine(line Line) error {
 		return nil
 	}
 
-	// Check for section headers
-	switch {
-	case strings.Contains(line.Text, "Deposits and other additions"):
-		logger.Debug().Msg("Entering deposits section")
-		p.state.CurrentSection = SectionDeposits
-		return nil
-	case strings.Contains(line.Text, "Withdrawals and other subtractions"):
-		logger.Debug().Msg("Entering withdrawals section")
-		p.state.CurrentSection = SectionWithdrawals
-		return nil
-	case strings.Contains(line.Text, "Service fees"):
-		logger.Debug().Msg("Entering service fees section")
-		p.state.CurrentSection = SectionServiceFees
+	// Check for account type
+	if match := accountTypePattern.FindStringSubmatch(line.Text); match != nil && p.state.CurrentAccount != "" {
+		if acc := p.accounts[p.state.CurrentAccount]; acc != nil {
+			acc.Type = match[1]
+		}
 		return nil
 	}
 
 	// Process transactions
-	if p.state.CurrentSection != "" && p.state.CurrentAccount != "" {
+	if p.state.CurrentSection != SectionUnknown && p.state.CurrentSection != SectionSummary && p.state.CurrentAccount != "" {
 		return p.processTransactionLine(line)
 	}
 
@@ -197,7 +291,7 @@ func (p *StatementProcessor) processTransactionLine(line Line) error {
 		Int("page", line.Page).
 		Int("line", line.LineNumber).
 		Str("text", line.Text).
-		Str("section", p.state.CurrentSection).
+		Str("section", string(p.state.CurrentSection)).
 		Logger()
 
 	// Start new transaction if we see a date at the start of a line
@@ -294,6 +388,9 @@ func (p *StatementProcessor) completeTransaction() {
 	}
 
 	logger.Debug().
+		Str("type", string(p.state.CurrentTransaction.Type)).
+		Float64("amount", p.state.CurrentTransaction.Amount).
+		Str("description", p.state.CurrentTransaction.Description).
 		Float64("deposits_total", summary.DepositsTotal).
 		Float64("withdrawals_total", summary.WithdrawalsTotal).
 		Float64("fees_total", summary.ServiceFeesTotal).
@@ -350,8 +447,85 @@ func (p *StatementProcessor) GetAccountSummary(accountNumber string) *AccountSum
 
 // Reset resets the processor state
 func (p *StatementProcessor) Reset() {
-	p.state = ProcessorState{}
+	p.state = ProcessorState{
+		CurrentSection: SectionUnknown,
+	}
 	p.accounts = make(map[string]*Account)
 	p.summaries = make(map[string]*AccountSummary)
 	p.transactions = make(map[string][]Transaction)
+}
+
+// ValidateSummaryTotals checks if transaction totals match summary amounts
+// Returns nil if totals match, otherwise returns an error with details
+func (p *StatementProcessor) ValidateSummaryTotals(accountNumber string) error {
+	summary := p.summaries[accountNumber]
+	if summary == nil {
+		return fmt.Errorf("no summary found for account %s", accountNumber)
+	}
+
+	var calcDeposits, calcWithdrawals, calcFees float64
+	for _, tx := range p.transactions[accountNumber] {
+		switch tx.Type {
+		case TransactionDeposit:
+			calcDeposits += tx.Amount
+		case TransactionWithdrawal:
+			calcWithdrawals += tx.Amount
+		case TransactionServiceFee:
+			calcFees += tx.Amount
+		}
+	}
+
+	// Use small epsilon for float comparison
+	const epsilon = 0.01
+	if math.Abs(calcDeposits-summary.DepositsTotal) > epsilon {
+		return fmt.Errorf("deposits total mismatch for account %s: calculated %.2f vs summary %.2f",
+			accountNumber, calcDeposits, summary.DepositsTotal)
+	}
+	if math.Abs(calcWithdrawals-summary.WithdrawalsTotal) > epsilon {
+		return fmt.Errorf("withdrawals total mismatch for account %s: calculated %.2f vs summary %.2f",
+			accountNumber, calcWithdrawals, summary.WithdrawalsTotal)
+	}
+	if math.Abs(calcFees-summary.ServiceFeesTotal) > epsilon {
+		return fmt.Errorf("service fees total mismatch for account %s: calculated %.2f vs summary %.2f",
+			accountNumber, calcFees, summary.ServiceFeesTotal)
+	}
+
+	return nil
+}
+
+// Add new validation method
+func (p *StatementProcessor) ValidateParsedTotals(accountNumber string) error {
+	summary := p.summaries[accountNumber]
+	if summary == nil {
+		return fmt.Errorf("no summary found for account %s", accountNumber)
+	}
+
+	// Use small epsilon for float comparison
+	const epsilon = 0.01
+
+	// Check each total type
+	if math.Abs(summary.DepositsTotal-summary.ParsedDepositsTotal) > epsilon {
+		return fmt.Errorf("deposits total mismatch: calculated %.2f vs parsed %.2f",
+			summary.DepositsTotal, summary.ParsedDepositsTotal)
+	}
+
+	if math.Abs(summary.WithdrawalsTotal-summary.ParsedWithdrawalsTotal) > epsilon {
+		return fmt.Errorf("withdrawals total mismatch: calculated %.2f vs parsed %.2f",
+			summary.WithdrawalsTotal, summary.ParsedWithdrawalsTotal)
+	}
+
+	if math.Abs(summary.ServiceFeesTotal-summary.ParsedServiceFeesTotal) > epsilon {
+		return fmt.Errorf("service fees total mismatch: calculated %.2f vs parsed %.2f",
+			summary.ServiceFeesTotal, summary.ParsedServiceFeesTotal)
+	}
+
+	// Validate that beginning balance + net changes = ending balance
+	netChange := summary.DepositsTotal + summary.WithdrawalsTotal + summary.ServiceFeesTotal
+	expectedEndBalance := summary.BeginBalance + netChange
+	if math.Abs(expectedEndBalance-summary.EndBalance) > epsilon {
+		return fmt.Errorf("balance equation mismatch: begin %.2f + net change %.2f != end %.2f",
+			summary.BeginBalance, netChange, summary.EndBalance)
+	}
+
+	return nil
 }

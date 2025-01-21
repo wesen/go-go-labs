@@ -33,6 +33,15 @@ Fixed transaction parsing issues with more precise pattern matching:
 - Improved multi-line transaction handling
 - Fixed test failures in TestMultiLineTransaction 
 
+## Amount Pattern Improvement
+
+Fixed transaction amount detection to handle numeric-only descriptions:
+
+- Modified amount pattern to require decimal point
+- Added test cases for numeric-only descriptions
+- Improved handling of transaction amounts vs descriptions
+- Fixed potential false positives in amount detection
+
 ## Debug Logging Enhancement
 
 Added comprehensive debug logging to track transaction processing:
@@ -77,3 +86,22 @@ Added support for multiple input formats in the BoA command:
 - Automatic format detection based on file extension
 - Robust error handling for malformed input
 - Skip invalid rows in CSV files gracefully 
+
+## BoA Statement Processor Improvements
+
+Enhanced the Bank of America statement processor with better validation and output handling:
+
+- Added transaction totals validation against summary amounts
+- Changed default output directory to input-file-dir/boa-output/
+- Added more detailed logging during processing
+- Added validation warnings for total mismatches 
+
+## Improved BoA Command Output
+
+Enhanced the BoA command output with detailed processing information:
+
+- Added progress indication during file processing
+- Added summary output showing transactions counts and totals
+- Added validation status indicators (✅/⚠️)
+- Added output file location listing
+- Improved readability with structured output format 
