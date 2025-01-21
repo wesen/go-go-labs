@@ -113,7 +113,7 @@ func (p *StatementProcessor) writeTransactionsCSV(outputDir, accNum, txType stri
 	defer w.Flush()
 
 	// Write header
-	if err := w.Write([]string{"Date", "Description", "Amount", "Page", "Line"}); err != nil {
+	if err := w.Write([]string{"Date", "Page", "Line", "Description", "Amount"}); err != nil {
 		return err
 	}
 
@@ -126,10 +126,10 @@ func (p *StatementProcessor) writeTransactionsCSV(outputDir, accNum, txType stri
 	for _, tx := range transactions {
 		record := []string{
 			tx.Date.Format("2006-01-02"),
-			tx.Description,
-			fmt.Sprintf("%.2f", tx.Amount),
 			fmt.Sprintf("%d", tx.Page),
 			fmt.Sprintf("%d", tx.LineNumber),
+			tx.Description,
+			fmt.Sprintf("%.2f", tx.Amount),
 		}
 		if err := w.Write(record); err != nil {
 			return err
