@@ -86,9 +86,10 @@ type StatementProcessor struct {
 
 // Regular expressions for pattern matching
 var (
-	accountNumberPattern = regexp.MustCompile(`Account (?:number:|#) (\d{4} \d{4} \d{4})`)
-	datePattern          = regexp.MustCompile(`^(\d{2}/\d{2}/\d{2})`)   // Must be at start of line
+	accountNumberPattern = regexp.MustCompile(`Account number: (\d{4} \d{4} \d{4})`)
+	datePattern          = regexp.MustCompile(`^(\d{2}/\d{2}/\d{2})`)               // Must be at start of line
 	amountPattern        = regexp.MustCompile(`^\(?[-$]?\d+(?:,\d{3})*\.\d{2}\)?$`) // Matches ($1,234.56), -$1,234.56, 1,234.56 etc
+	frenchAmountPattern  = regexp.MustCompile(`^\(?[-$]?\d+,\d{2}\)?$`)             // Matches French format like 1234,56
 	periodPattern        = regexp.MustCompile(`for ([A-Za-z]+ \d{1,2}, \d{4}) to ([A-Za-z]+ \d{1,2}, \d{4})`)
 	beginBalancePattern  = regexp.MustCompile(`Beginning balance on (.+)`)
 	endBalancePattern    = regexp.MustCompile(`Ending balance on (.+)`)
@@ -132,6 +133,8 @@ func (p *StatementProcessor) ProcessLine(line Line) error {
 		Int("page", line.Page).
 		Int("line", line.LineNumber).
 		Str("text", line.Text).
+		Str("currentAccount", anonymizeAccountNumber(p.state.CurrentAccount)).
+		Str("currentSection", string(p.state.CurrentSection)).
 		Logger()
 
 	// Check for beginning of summary section
@@ -329,7 +332,7 @@ func (p *StatementProcessor) processTransactionLine(line Line) error {
 			Logger()
 
 		// Try to parse amount only if the line contains just the amount
-		if trimmedText != "" && amountPattern.MatchString(trimmedText) {
+		if trimmedText != "" && (amountPattern.MatchString(trimmedText) || frenchAmountPattern.MatchString(trimmedText)) {
 			if amount, ok := p.tryParseAmount(trimmedText); ok {
 				logger.Debug().
 					Float64("amount", amount).
@@ -427,6 +430,22 @@ func (p *StatementProcessor) tryParseAmount(text string) (float64, bool) {
 			return amount, true
 		}
 	}
+
+	// Try French format
+	if match := frenchAmountPattern.FindString(text); match != "" {
+		// Clean up the amount string
+		clean := strings.ReplaceAll(match, "$", "")
+		clean = strings.ReplaceAll(clean, "(", "-")
+		clean = strings.ReplaceAll(clean, ")", "")
+		// Replace comma with period for parsing
+		clean = strings.ReplaceAll(clean, ",", ".")
+
+		amount, err := strconv.ParseFloat(clean, 64)
+		if err == nil {
+			return amount, true
+		}
+	}
+
 	return 0, false
 }
 

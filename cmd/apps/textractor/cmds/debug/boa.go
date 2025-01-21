@@ -147,6 +147,8 @@ func newBoACommand() *cobra.Command {
 				summary := processor.GetAccountSummary(accNum)
 				if summary != nil {
 					fmt.Printf("Statement period: %s\n", summary.Period)
+					fmt.Printf("Beginning balance: $%.2f\n", summary.BeginBalance)
+					fmt.Printf("Ending balance: $%.2f\n", summary.EndBalance)
 
 					txns := processor.GetTransactions(accNum)
 					var deposits, withdrawals, fees int
@@ -161,16 +163,26 @@ func newBoACommand() *cobra.Command {
 						}
 					}
 
-					fmt.Printf("Transactions:\n")
-					fmt.Printf("- Deposits: %d transactions totaling $%.2f\n", deposits, summary.DepositsTotal)
-					fmt.Printf("- Withdrawals: %d transactions totaling $%.2f\n", withdrawals, summary.WithdrawalsTotal)
-					fmt.Printf("- Service fees: %d transactions totaling $%.2f\n", fees, summary.ServiceFeesTotal)
+					fmt.Printf("\nTransactions:\n")
+					fmt.Printf("- Deposits: %d transactions totaling $%.2f (parsed from summary: $%.2f)\n",
+						deposits, summary.DepositsTotal, summary.ParsedDepositsTotal)
+					fmt.Printf("- Withdrawals: %d transactions totaling $%.2f (parsed from summary: $%.2f)\n",
+						withdrawals, summary.WithdrawalsTotal, summary.ParsedWithdrawalsTotal)
+					fmt.Printf("- Service fees: %d transactions totaling $%.2f (parsed from summary: $%.2f)\n",
+						fees, summary.ServiceFeesTotal, summary.ParsedServiceFeesTotal)
 
 					// Validate totals
 					if err := processor.ValidateSummaryTotals(accNum); err != nil {
 						fmt.Printf("⚠️  Warning: %v\n", err)
 					} else {
-						fmt.Printf("✅ All totals validated successfully\n")
+						fmt.Printf("✅ All transaction totals validated successfully\n")
+					}
+
+					// Validate parsed totals
+					if err := processor.ValidateParsedTotals(accNum); err != nil {
+						fmt.Printf("⚠️  Warning: %v\n", err)
+					} else {
+						fmt.Printf("✅ All parsed totals validated successfully\n")
 					}
 				}
 			}

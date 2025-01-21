@@ -105,3 +105,11 @@ Enhanced the BoA command output with detailed processing information:
 - Added validation status indicators (✅/⚠️)
 - Added output file location listing
 - Improved readability with structured output format 
+
+Enhanced BoA Statement Summary Output
+
+Added comparison between parsed summary totals and accumulated transaction totals to provide better visibility into statement processing accuracy.
+
+- Added beginning and ending balance to summary output
+- Added parsed summary totals alongside accumulated transaction totals
+- Added separate validation messages for transaction totals and parsed totals 
