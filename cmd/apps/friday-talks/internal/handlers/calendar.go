@@ -66,8 +66,19 @@ func (h *CalendarHandler) HandleCalendar(w http.ResponseWriter, r *http.Request)
 	}
 	nextMonthData := generateCalendarMonth(nextMonth, nextYear, now, h.talkRepo, r.Context())
 
-	// Render calendar page
-	templates.Calendar(user, []templates.CalendarMonth{currentMonthData, nextMonthData}, month, year).Render(r.Context(), w)
+	// Check if it's an HTMX request
+	isHtmxRequest := r.Header.Get("HX-Request") == "true"
+
+	if isHtmxRequest {
+		// Render only the calendar grid partial for HTMX requests
+		// TODO(manuel): We only show the current requested month here. How to handle the next month?
+		// For now, just render the requested month.
+		w.Header().Set("Content-Type", "text/html")
+		templates._calendarGrid(currentMonthData).Render(r.Context(), w)
+	} else {
+		// Render the full calendar page for regular requests
+		templates.Calendar(user, []templates.CalendarMonth{currentMonthData, nextMonthData}, month, year).Render(r.Context(), w)
+	}
 }
 
 // generateCalendarMonth creates a calendar month structure for the given month and year

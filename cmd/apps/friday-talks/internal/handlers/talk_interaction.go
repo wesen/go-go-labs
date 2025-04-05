@@ -28,7 +28,7 @@ func (h *TalkHandler) HandleVoteOnTalk(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusSeeOther) // Keep redirect for unauthenticated
 		return
 	}
 
@@ -39,15 +39,24 @@ func (h *TalkHandler) HandleVoteOnTalk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reusable function to render the vote form partial
+	renderVoteForm := func(errorMsg, successMsg string) {
+		// Re-check if user has voted (state might have changed)
+		_, err := h.voteRepo.FindByIDs(r.Context(), user.ID, talk.ID)
+		voted := err == nil
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkVoteForm(user, talk, voted, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if talk is still in proposed state
 	if talk.Status != models.TalkStatusProposed {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Can only vote on proposed talks", http.StatusSeeOther)
+		renderVoteForm("Can only vote on proposed talks", "")
 		return
 	}
 
 	// Check if user is not the speaker (can't vote on own talk)
 	if talk.SpeakerID == user.ID {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=You cannot vote on your own talk", http.StatusSeeOther)
+		renderVoteForm("You cannot vote on your own talk", "")
 		return
 	}
 
@@ -60,14 +69,13 @@ func (h *TalkHandler) HandleVoteOnTalk(w http.ResponseWriter, r *http.Request) {
 	interestLevelStr := r.FormValue("interest_level")
 	interestLevel, err := strconv.Atoi(interestLevelStr)
 	if err != nil || interestLevel < 1 || interestLevel > 5 {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Invalid interest level", http.StatusSeeOther)
+		renderVoteForm("Invalid interest level", "")
 		return
 	}
 
 	// Create availability map from form data
 	availability := make(map[string]bool)
 	for _, date := range talk.PreferredDates {
-		// Check if the checkbox for this date was checked
 		value := r.FormValue("availability_" + date)
 		availability[date] = (value == "true")
 	}
@@ -75,31 +83,27 @@ func (h *TalkHandler) HandleVoteOnTalk(w http.ResponseWriter, r *http.Request) {
 	// Check if we're updating an existing vote
 	existingVote, err := h.voteRepo.FindByIDs(r.Context(), user.ID, talkID)
 	if err == nil {
-		// Update existing vote
 		existingVote.InterestLevel = interestLevel
 		existingVote.Availability = availability
-
 		if err := h.voteRepo.Update(r.Context(), existingVote); err != nil {
 			http.Error(w, "Failed to update vote", http.StatusInternalServerError)
 			return
 		}
 	} else {
-		// Create new vote
 		vote := &models.Vote{
 			UserID:        user.ID,
 			TalkID:        talkID,
 			InterestLevel: interestLevel,
 			Availability:  availability,
 		}
-
 		if err := h.voteRepo.Create(r.Context(), vote); err != nil {
 			http.Error(w, "Failed to create vote", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// Redirect back to talk page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Vote submitted successfully", http.StatusSeeOther)
+	// Render the vote form partial with success message
+	renderVoteForm("", "Vote submitted successfully")
 }
 
 // HandleManageAttendance handles managing attendance for a talk
@@ -121,7 +125,7 @@ func (h *TalkHandler) HandleManageAttendance(w http.ResponseWriter, r *http.Requ
 	// Get user from context
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusSeeOther) // Keep redirect for unauthenticated
 		return
 	}
 
@@ -132,9 +136,17 @@ func (h *TalkHandler) HandleManageAttendance(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Reusable function to render the attendance partial
+	renderAttendance := func(errorMsg, successMsg string) {
+		// Re-fetch attendance status
+		attendance, _ := h.attendanceRepo.FindByIDs(r.Context(), talkID, user.ID)
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkAttendance(user, talk, attendance, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if talk is scheduled
 	if talk.Status != models.TalkStatusScheduled {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Can only manage attendance for scheduled talks", http.StatusSeeOther)
+		renderAttendance("Can only manage attendance for scheduled talks", "")
 		return
 	}
 
@@ -146,36 +158,32 @@ func (h *TalkHandler) HandleManageAttendance(w http.ResponseWriter, r *http.Requ
 	// Get status from form
 	status := models.AttendanceStatus(r.FormValue("status"))
 	if status != models.AttendanceStatusConfirmed && status != models.AttendanceStatusDeclined {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Invalid attendance status", http.StatusSeeOther)
+		renderAttendance("Invalid attendance status", "")
 		return
 	}
 
 	// Check if we're updating an existing attendance record
 	existingAttendance, err := h.attendanceRepo.FindByIDs(r.Context(), talkID, user.ID)
 	if err == nil {
-		// Update existing attendance
 		existingAttendance.Status = status
-
 		if err := h.attendanceRepo.Update(r.Context(), existingAttendance); err != nil {
 			http.Error(w, "Failed to update attendance", http.StatusInternalServerError)
 			return
 		}
 	} else {
-		// Create new attendance record
 		attendance := &models.Attendance{
 			TalkID: talkID,
 			UserID: user.ID,
 			Status: status,
 		}
-
 		if err := h.attendanceRepo.Create(r.Context(), attendance); err != nil {
 			http.Error(w, "Failed to create attendance record", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// Redirect back to talk page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Attendance updated successfully", http.StatusSeeOther)
+	// Render the attendance partial with success message
+	renderAttendance("", "Attendance updated successfully")
 }
 
 // HandleProvideFeedback handles providing feedback for a talk
@@ -197,7 +205,7 @@ func (h *TalkHandler) HandleProvideFeedback(w http.ResponseWriter, r *http.Reque
 	// Get user from context
 	user := auth.UserFromContext(r.Context())
 	if user == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusSeeOther) // Keep redirect for unauthenticated
 		return
 	}
 
@@ -208,16 +216,30 @@ func (h *TalkHandler) HandleProvideFeedback(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Re-fetch attendance record for current state
+	attendance, err := h.attendanceRepo.FindByIDs(r.Context(), talkID, user.ID)
+
+	// Reusable function to render the feedback form partial
+	renderFeedbackForm := func(errorMsg, successMsg string) {
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkFeedbackForm(user, talk, attendance, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if talk is completed
 	if talk.Status != models.TalkStatusCompleted {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Can only provide feedback for completed talks", http.StatusSeeOther)
+		renderFeedbackForm("Can only provide feedback for completed talks", "")
 		return
 	}
 
-	// Check if user attended the talk
-	attendance, err := h.attendanceRepo.FindByIDs(r.Context(), talkID, user.ID)
+	// Check if user attended the talk (attendance might be nil if not found)
 	if err != nil || attendance.Status != models.AttendanceStatusAttended {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=You must have attended the talk to provide feedback", http.StatusSeeOther)
+		renderFeedbackForm("You must have attended the talk to provide feedback", "")
+		return
+	}
+
+	// Check if feedback already exists
+	if attendance.Feedback != "" {
+		renderFeedbackForm("You have already provided feedback for this talk", "")
 		return
 	}
 
@@ -229,20 +251,19 @@ func (h *TalkHandler) HandleProvideFeedback(w http.ResponseWriter, r *http.Reque
 	// Get feedback from form
 	feedback := r.FormValue("feedback")
 	if feedback == "" {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Feedback cannot be empty", http.StatusSeeOther)
+		renderFeedbackForm("Feedback cannot be empty", "")
 		return
 	}
 
 	// Update attendance record with feedback
 	attendance.Feedback = feedback
-
 	if err := h.attendanceRepo.Update(r.Context(), attendance); err != nil {
 		http.Error(w, "Failed to save feedback", http.StatusInternalServerError)
 		return
 	}
 
-	// Redirect back to talk page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Feedback submitted successfully", http.StatusSeeOther)
+	// Render the feedback form partial with success message
+	renderFeedbackForm("", "Feedback submitted successfully")
 }
 
 // HandleAddResource handles adding a resource to a talk
@@ -275,9 +296,25 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Reusable function to render the resources partial
+	renderResourcesPartial := func(errorMsg, successMsg string) {
+		// Re-fetch resources
+		resources, err := h.resourceRepo.FindByTalkID(r.Context(), talk.ID)
+		if err != nil {
+			http.Error(w, "Failed to fetch resources", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkResourcesSection(user, talk, resources, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if user is the speaker
 	if talk.SpeakerID != user.ID {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can add resources to a talk", http.StatusSeeOther)
+		if r.Header.Get("HX-Request") == "true" {
+			renderResourcesPartial("Only the speaker can add resources", "")
+		} else {
+			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can add resources to a talk", http.StatusSeeOther)
+		}
 		return
 	}
 
@@ -293,7 +330,11 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 
 	// Validate input
 	if title == "" || url == "" {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Title and URL are required", http.StatusSeeOther)
+		if r.Header.Get("HX-Request") == "true" {
+			renderResourcesPartial("Title and URL are required", "")
+		} else {
+			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Title and URL are required", http.StatusSeeOther)
+		}
 		return
 	}
 
@@ -310,8 +351,12 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Redirect back to talk page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Resource added successfully", http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		renderResourcesPartial("", "Resource added successfully")
+	} else {
+		// Redirect back to talk page for non-HTMX requests
+		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Resource added successfully", http.StatusSeeOther)
+	}
 }
 
 // HandleDeleteResource handles deleting a resource from a talk
@@ -351,9 +396,25 @@ func (h *TalkHandler) HandleDeleteResource(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Reusable function to render the resources partial
+	renderResourcesPartial := func(errorMsg, successMsg string) {
+		// Re-fetch resources
+		resources, err := h.resourceRepo.FindByTalkID(r.Context(), talk.ID)
+		if err != nil {
+			http.Error(w, "Failed to fetch resources", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkResourcesSection(user, talk, resources, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if user is the speaker
 	if talk.SpeakerID != user.ID {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can delete resources from a talk", http.StatusSeeOther)
+		if r.Header.Get("HX-Request") == "true" {
+			renderResourcesPartial("Only the speaker can delete resources", "")
+		} else {
+			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can delete resources from a talk", http.StatusSeeOther)
+		}
 		return
 	}
 
@@ -363,6 +424,10 @@ func (h *TalkHandler) HandleDeleteResource(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Redirect back to talk page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Resource deleted successfully", http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		renderResourcesPartial("", "Resource deleted successfully")
+	} else {
+		// Redirect back to talk page for non-HTMX requests
+		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Resource deleted successfully", http.StatusSeeOther)
+	}
 }

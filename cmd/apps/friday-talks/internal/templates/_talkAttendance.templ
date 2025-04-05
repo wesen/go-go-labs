@@ -1,0 +1,58 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+)
+
+// _talkAttendance renders the attendance management section for a scheduled talk.
+templ _talkAttendance(user *models.User, talk *models.Talk, attendance *models.Attendance, errorString string, successString string) {
+	if errorString != "" {
+		@Alert("danger", errorString)
+	}
+	if successString != "" {
+		@Alert("success", successString)
+	}
+
+	if talk.Status == models.TalkStatusScheduled && user != nil {
+		<div class="mt-4">
+			<h5>Attendance</h5>
+			if attendance == nil {
+				<form 
+					hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/attend", talk.ID)) } 
+					hx-target="#attendance-section" 
+					hx-swap="outerHTML"
+					class="mb-3">
+					<input type="hidden" name="status" value="confirmed"/>
+					<button type="submit" class="btn btn-primary">Confirm Attendance</button>
+				</form>
+			} else {
+				if attendance.Status == models.AttendanceStatusConfirmed {
+					<div class="alert alert-success">
+						You have confirmed your attendance. Looking forward to seeing you!
+					</div>
+					<form 
+						hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/attend", talk.ID)) } 
+						hx-target="#attendance-section" 
+						hx-swap="outerHTML"
+						class="mb-3">
+						<input type="hidden" name="status" value="declined"/>
+						<button type="submit" class="btn btn-outline-danger">Cancel Attendance</button>
+					</form>
+				} else if attendance.Status == models.AttendanceStatusDeclined {
+					<div class="alert alert-secondary">
+						You have declined to attend this talk.
+					</div>
+					<form 
+						hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/attend", talk.ID)) } 
+						hx-target="#attendance-section" 
+						hx-swap="outerHTML"
+						class="mb-3">
+						<input type="hidden" name="status" value="confirmed"/>
+						<button type="submit" class="btn btn-outline-primary">Confirm Attendance</button>
+					</form>
+				}
+			}
+		</div>
+	}
+} 

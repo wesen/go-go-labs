@@ -1,0 +1,47 @@
+package templates
+
+import (
+	"time"
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+)
+
+// _proposeTalkForm renders the form for proposing a new talk.
+templ _proposeTalkForm(user *models.User, errorString string, fridays []time.Time) {
+	if errorString != "" {
+		@Alert("danger", errorString)
+	}
+	<form 
+		hx-post="/talks/propose" 
+		hx-target="#propose-form-container"
+		hx-swap="outerHTML"
+		>
+		<div class="mb-3">
+			<label for="title" class="form-label">Title</label>
+			<input type="text" class="form-control" id="title" name="title" required/>
+		</div>
+		<div class="mb-3">
+			<label for="description" class="form-label">Description</label>
+			<textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+			<div class="form-text">Provide a detailed description of your talk including what attendees will learn.</div>
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Preferred Dates</label>
+			<div class="form-text mb-2">Select dates when you would be available to give this talk.</div>
+			<div class="row">
+				for _, friday := range fridays {
+					<div class="col-md-4 mb-2">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="preferred_dates[]" id={ "date_" + friday.Format("2006-01-02") } value={ friday.Format("2006-01-02") }/>
+							<label class="form-check-label" for={ "date_" + friday.Format("2006-01-02") }>
+								{ friday.Format("Jan 2, 2006") } (Friday)
+							</label>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+		<div class="d-grid">
+			<button type="submit" class="btn btn-primary">Submit Proposal</button>
+		</div>
+	</form>
+} 

@@ -1,0 +1,79 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+)
+
+// _talkVoteForm renders the voting section for a proposed talk.
+// It shows the form if the user hasn't voted and isn't the speaker.
+// Otherwise, it shows a confirmation or nothing.
+templ _talkVoteForm(user *models.User, talk *models.Talk, voted bool, errorString string, successString string) {
+	if errorString != "" {
+		@Alert("danger", errorString)
+	}
+	if successString != "" {
+		@Alert("success", successString)
+	}
+
+	if talk.Status == models.TalkStatusProposed && user != nil {
+		if voted {
+			<div class="alert alert-info mt-4">
+				You have already voted on this talk. Thank you for your input!
+				// TODO: Add option to change vote?
+			</div>
+		} else if talk.SpeakerID != user.ID {
+			<div class="mt-4">
+				<h5>Are you interested in this talk?</h5>
+				<form 
+					hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/vote", talk.ID)) }
+					hx-target="#vote-section" 
+					hx-swap="outerHTML"
+					class="mb-3">
+					<div class="mb-3">
+						<label class="form-label">Interest Level</label>
+						<div class="d-flex flex-wrap">
+							for i := 1; i <= 5; i++ {
+								<div class="form-check me-3 mb-2">
+									<input class="form-check-input" type="radio" name="interest_level" id={ fmt.Sprintf("interest%d", i) } value={ fmt.Sprintf("%d", i) } checked?={i == 3}/>
+									<label class="form-check-label" for={ fmt.Sprintf("interest%d", i) }>
+										{ fmt.Sprintf("%d", i) }
+										if i == 1 {
+											 (Low)
+										} else if i == 5 {
+											 (High)
+										} else if i == 3 {
+											 (Medium)
+										}
+									</label>
+								</div>
+							}
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">Availability for Preferred Dates</label>
+						<div class="row">
+							if len(talk.PreferredDates) == 0 {
+								<div class="col-12"><em class="text-muted">No preferred dates specified by speaker.</em></div>
+							} else {
+								for _, date := range talk.PreferredDates {
+									<div class="col-md-4 mb-2">
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" name={ "availability_" + date } id={ "avail_" + date } value="true" checked/>
+											<label class="form-check-label" for={ "avail_" + date }>
+												{ formatShortDate(date) }
+											</label>
+										</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+
+					<button type="submit" class="btn btn-primary">Submit Vote</button>
+				</form>
+			</div>
+		}
+	}
+} 

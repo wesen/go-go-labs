@@ -43,17 +43,15 @@ func Login(errorString string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"row justify-content-center\"><div class=\"col-md-6\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Login</h3></div><div class=\"card-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"row justify-content-center\"><div class=\"col-md-6\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Login</h3></div><div class=\"card-body\"><div id=\"login-form-container\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if errorString != "" {
-				templ_7745c5c3_Err = Alert("danger", errorString).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
+			templ_7745c5c3_Err = _loginForm(errorString).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<form action=\"/login\" method=\"POST\"><div class=\"mb-3\"><label for=\"email\" class=\"form-label\">Email</label> <input type=\"email\" class=\"form-control\" id=\"email\" name=\"email\" required></div><div class=\"mb-3\"><label for=\"password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"password\" name=\"password\" required></div><div class=\"d-grid\"><button type=\"submit\" class=\"btn btn-primary\">Login</button></div></form><div class=\"mt-3 text-center\"><p>Don't have an account? <a href=\"/register\">Register here</a></p></div></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -100,17 +98,15 @@ func Register(errorString string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"row justify-content-center\"><div class=\"col-md-6\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Register</h3></div><div class=\"card-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"row justify-content-center\"><div class=\"col-md-6\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Register</h3></div><div class=\"card-body\"><div id=\"register-form-container\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if errorString != "" {
-				templ_7745c5c3_Err = Alert("danger", errorString).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
+			templ_7745c5c3_Err = _registerForm(errorString).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form action=\"/register\" method=\"POST\"><div class=\"mb-3\"><label for=\"name\" class=\"form-label\">Name</label> <input type=\"text\" class=\"form-control\" id=\"name\" name=\"name\" required></div><div class=\"mb-3\"><label for=\"email\" class=\"form-label\">Email</label> <input type=\"email\" class=\"form-control\" id=\"email\" name=\"email\" required></div><div class=\"mb-3\"><label for=\"password\" class=\"form-label\">Password</label> <input type=\"password\" class=\"form-control\" id=\"password\" name=\"password\" required minlength=\"8\"><div class=\"form-text\">Password should be at least 8 characters long.</div></div><div class=\"mb-3\"><label for=\"confirm_password\" class=\"form-label\">Confirm Password</label> <input type=\"password\" class=\"form-control\" id=\"confirm_password\" name=\"confirm_password\" required minlength=\"8\"></div><div class=\"d-grid\"><button type=\"submit\" class=\"btn btn-primary\">Register</button></div></form><div class=\"mt-3 text-center\"><p>Already have an account? <a href=\"/login\">Login here</a></p></div></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -157,49 +153,15 @@ func Profile(user *models.User, successString string, errorString string) templ.
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"row justify-content-center\"><div class=\"col-md-8\"><div class=\"card\"><div class=\"card-header d-flex justify-content-between align-items-center\"><h3 class=\"mb-0\">My Profile</h3></div><div class=\"card-body\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"row justify-content-center\"><div class=\"col-md-8\"><div class=\"card\"><div class=\"card-header d-flex justify-content-between align-items-center\"><h3 class=\"mb-0\">My Profile</h3></div><div class=\"card-body\"><div id=\"profile-form-container\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if successString != "" {
-				templ_7745c5c3_Err = Alert("success", successString).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			if errorString != "" {
-				templ_7745c5c3_Err = Alert("danger", errorString).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<form action=\"/profile\" method=\"POST\"><div class=\"mb-3\"><label for=\"name\" class=\"form-label\">Name</label> <input type=\"text\" class=\"form-control\" id=\"name\" name=\"name\" value=\"")
+			templ_7745c5c3_Err = _profileForm(user, successString, errorString).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/auth.templ`, Line: 102, Col: 87}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" required></div><div class=\"mb-3\"><label for=\"email\" class=\"form-label\">Email</label> <input type=\"email\" class=\"form-control\" id=\"email\" name=\"email\" value=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/templates/auth.templ`, Line: 106, Col: 91}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" required></div><hr><h5>Change Password (Optional)</h5><div class=\"mb-3\"><label for=\"current_password\" class=\"form-label\">Current Password</label> <input type=\"password\" class=\"form-control\" id=\"current_password\" name=\"current_password\"></div><div class=\"mb-3\"><label for=\"new_password\" class=\"form-label\">New Password</label> <input type=\"password\" class=\"form-control\" id=\"new_password\" name=\"new_password\" minlength=\"8\"></div><div class=\"mb-3\"><label for=\"confirm_password\" class=\"form-label\">Confirm New Password</label> <input type=\"password\" class=\"form-control\" id=\"confirm_password\" name=\"confirm_password\" minlength=\"8\"></div><div class=\"d-flex justify-content-end\"><button type=\"submit\" class=\"btn btn-primary\">Save Changes</button></div></form></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

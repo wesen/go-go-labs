@@ -34,61 +34,35 @@ templ Calendar(user *models.User, months []CalendarMonth, currentMonth time.Mont
 			<div class="card-header d-flex justify-content-between align-items-center">
 				<h3 class="mb-0">Talk Schedule</h3>
 				<div>
-					<a href={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getPreviousMonth(currentMonth), getPreviousYear(currentMonth, currentYear))) } class="btn btn-sm btn-outline-primary me-2">&laquo; Previous</a>
-					<a href={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getNextMonth(currentMonth), getNextYear(currentMonth, currentYear))) } class="btn btn-sm btn-outline-primary">Next &raquo;</a>
+					<a 
+						href={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getPreviousMonth(currentMonth), getPreviousYear(currentMonth, currentYear))) } 
+						class="btn btn-sm btn-outline-primary me-2"
+						hx-get={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getPreviousMonth(currentMonth), getPreviousYear(currentMonth, currentYear))) }
+						hx-target="#calendar-grid-container"
+						hx-swap="innerHTML"
+						hx-push-url="true"
+						hx-indicator="#calendar-loading-indicator"
+					>&laquo; Previous</a>
+					<a 
+						href={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getNextMonth(currentMonth), getNextYear(currentMonth, currentYear))) } 
+						class="btn btn-sm btn-outline-primary"
+						hx-get={ templ.SafeURL(fmt.Sprintf("/calendar?month=%d&year=%d", getNextMonth(currentMonth), getNextYear(currentMonth, currentYear))) }
+						hx-target="#calendar-grid-container"
+						hx-swap="innerHTML"
+						hx-push-url="true"
+						hx-indicator="#calendar-loading-indicator"
+					>Next &raquo;</a>
 				</div>
 			</div>
 			<div class="card-body">
-				for _, month := range months {
-					<h4 class="mb-3">{ month.Month.String() } { fmt.Sprintf("%d", month.Year) }</h4>
-					<table class="table table-bordered mb-5">
-						<thead>
-							<tr>
-								<th>Sunday</th>
-								<th>Monday</th>
-								<th>Tuesday</th>
-								<th>Wednesday</th>
-								<th>Thursday</th>
-								<th>Friday</th>
-								<th>Saturday</th>
-							</tr>
-						</thead>
-						<tbody>
-							for _, week := range month.Weeks {
-								<tr>
-									for _, day := range week {
-										if day.Date.IsZero() {
-											<td></td>
-										} else {
-											<td class={ 
-												"calendar-day", 
-												templ.KV("has-talk", day.HasTalk),
-												templ.KV("today", day.IsToday),
-												templ.KV("other-month", day.IsOtherMonth),
-											}>
-												<div class="d-flex justify-content-between mb-2">
-													<div>{ day.Date.Format("2") }</div>
-												</div>
-												if day.HasTalk {
-													<div class="p-1">
-														<a href={ templ.SafeURL(fmt.Sprintf("/talks/%d", day.Talk.ID)) } class="d-block">
-															<div class="card-body p-1">
-																<strong>{ day.Talk.Title }</strong>
-																if day.Talk.Speaker != nil {
-																	<div class="small text-muted">by { day.Talk.Speaker.Name }</div>
-																}
-															</div>
-														</a>
-													</div>
-												}
-											</td>
-										}
-									}
-								</tr>
-							}
-						</tbody>
-					</table>
-				}
+				<div class="htmx-indicator text-center mb-3" id="calendar-loading-indicator">
+					@LoadingSpinner()
+				</div>
+				<div id="calendar-grid-container">
+					for _, month := range months {
+						@_calendarGrid(month)
+					}
+				</div>
 			</div>
 		</div>
 	}

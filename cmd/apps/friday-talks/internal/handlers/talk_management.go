@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,6 +24,19 @@ func (h *TalkHandler) HandleProposeTalk(w http.ResponseWriter, r *http.Request) 
 
 	// Get upcoming Fridays for selection
 	fridays := h.scheduler.GetUpcomingFridays(8) // Next 8 weeks
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	// Function to render the form (potentially partial)
+	renderForm := func(errorMsg string) {
+		if isHTMX {
+			w.Header().Set("Content-Type", "text/html")
+			// Re-render only the form partial with the error
+			templates._proposeTalkForm(user, errorMsg, fridays).Render(r.Context(), w)
+		} else {
+			// Render the full page with the error
+			templates.ProposeTalk(user, errorMsg, fridays).Render(r.Context(), w)
+		}
+	}
 
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
@@ -36,12 +50,12 @@ func (h *TalkHandler) HandleProposeTalk(w http.ResponseWriter, r *http.Request) 
 
 		// Validate input
 		if title == "" || description == "" {
-			templates.ProposeTalk(user, "Title and description are required", fridays).Render(r.Context(), w)
+			renderForm("Title and description are required")
 			return
 		}
 
 		if len(preferredDates) == 0 {
-			templates.ProposeTalk(user, "Please select at least one preferred date", fridays).Render(r.Context(), w)
+			renderForm("Please select at least one preferred date")
 			return
 		}
 
@@ -59,13 +73,20 @@ func (h *TalkHandler) HandleProposeTalk(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		// Redirect to the talk detail page
-		http.Redirect(w, r, "/talks/"+strconv.Itoa(talk.ID)+"?success=Talk proposed successfully", http.StatusSeeOther)
+		if isHTMX {
+			// For HTMX, send a redirect header
+			redirectURL := fmt.Sprintf("/talks/%d?success=Talk proposed successfully", talk.ID)
+			w.Header().Set("HX-Redirect", redirectURL)
+			w.WriteHeader(http.StatusOK) // HTMX expects 200 for HX-Redirect
+		} else {
+			// For non-HTMX, perform a standard redirect
+			http.Redirect(w, r, fmt.Sprintf("/talks/%d?success=Talk proposed successfully", talk.ID), http.StatusSeeOther)
+		}
 		return
 	}
 
-	// Render propose talk form
-	templates.ProposeTalk(user, "", fridays).Render(r.Context(), w)
+	// Render initial form (full page)
+	renderForm("")
 }
 
 // HandleEditTalk handles editing an existing talk
@@ -106,6 +127,19 @@ func (h *TalkHandler) HandleEditTalk(w http.ResponseWriter, r *http.Request) {
 
 	// Get upcoming Fridays for selection
 	fridays := h.scheduler.GetUpcomingFridays(8) // Next 8 weeks
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	// Function to render the form (potentially partial)
+	renderForm := func(errorMsg string) {
+		if isHTMX {
+			w.Header().Set("Content-Type", "text/html")
+			// Re-render only the form partial with the error
+			templates._editTalkForm(user, talk, errorMsg, fridays).Render(r.Context(), w)
+		} else {
+			// Render the full page with the error
+			templates.EditTalk(user, talk, errorMsg, fridays).Render(r.Context(), w)
+		}
+	}
 
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
@@ -119,12 +153,12 @@ func (h *TalkHandler) HandleEditTalk(w http.ResponseWriter, r *http.Request) {
 
 		// Validate input
 		if title == "" || description == "" {
-			templates.EditTalk(user, talk, "Title and description are required", fridays).Render(r.Context(), w)
+			renderForm("Title and description are required")
 			return
 		}
 
 		if len(preferredDates) == 0 {
-			templates.EditTalk(user, talk, "Please select at least one preferred date", fridays).Render(r.Context(), w)
+			renderForm("Please select at least one preferred date")
 			return
 		}
 
@@ -138,13 +172,20 @@ func (h *TalkHandler) HandleEditTalk(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Redirect to the talk detail page
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk updated successfully", http.StatusSeeOther)
+		if isHTMX {
+			// For HTMX, send a redirect header back to the detail page
+			redirectURL := fmt.Sprintf("/talks/%d?success=Talk updated successfully", talk.ID)
+			w.Header().Set("HX-Redirect", redirectURL)
+			w.WriteHeader(http.StatusOK)
+		} else {
+			// For non-HTMX, perform a standard redirect
+			http.Redirect(w, r, fmt.Sprintf("/talks/%d?success=Talk updated successfully", talk.ID), http.StatusSeeOther)
+		}
 		return
 	}
 
-	// Render edit talk form
-	templates.EditTalk(user, talk, "", fridays).Render(r.Context(), w)
+	// Render initial edit form (full page)
+	renderForm("")
 }
 
 // HandleCancelTalk handles canceling a talk
@@ -177,22 +218,45 @@ func (h *TalkHandler) HandleCancelTalk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Function to render the management card partial
+	renderManagementCard := func(errorMsg, successMsg string) {
+		// Re-fetch talk to get the latest status
+		latestTalk, err := h.talkRepo.FindByID(r.Context(), talk.ID)
+		if err != nil {
+			// Handle error fetching latest talk, maybe render with old talk and an error?
+			latestTalk = talk // Fallback to old talk data
+			if errorMsg == "" {
+				errorMsg = "Error refreshing talk status"
+			}
+		}
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkManagementCard(user, latestTalk, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Check if user is the speaker or admin
-	if talk.SpeakerID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
+	if talk.SpeakerID != user.ID { // Add admin check later if needed
+		if r.Header.Get("HX-Request") == "true" {
+			renderManagementCard("Unauthorized", "")
+		} else {
+			http.Error(w, "Unauthorized", http.StatusForbidden)
+		}
 		return
 	}
 
-	// Cancel the talk
+	// Cancel the talk (Update status to Canceled)
 	talk.Status = models.TalkStatusCanceled
-
 	if err := h.talkRepo.Update(r.Context(), talk); err != nil {
 		http.Error(w, "Failed to cancel talk", http.StatusInternalServerError)
 		return
 	}
 
-	// Redirect to the talk detail page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk canceled successfully", http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		// Render the updated management card partial
+		renderManagementCard("", "Talk canceled successfully")
+	} else {
+		// Redirect to the talk detail page for non-HTMX requests
+		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk canceled successfully", http.StatusSeeOther)
+	}
 }
 
 // HandleScheduleTalk handles scheduling a talk
@@ -318,15 +382,32 @@ func (h *TalkHandler) HandleCompleteTalk(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Function to render the management card partial
+	renderManagementCard := func(errorMsg, successMsg string) {
+		// Re-fetch talk to get the latest status
+		latestTalk, err := h.talkRepo.FindByID(r.Context(), talk.ID)
+		if err != nil {
+			latestTalk = talk // Fallback
+			if errorMsg == "" {
+				errorMsg = "Error refreshing talk status"
+			}
+		}
+		w.Header().Set("Content-Type", "text/html")
+		templates._talkManagementCard(user, latestTalk, errorMsg, successMsg).Render(r.Context(), w)
+	}
+
 	// Only allow completing scheduled talks
 	if talk.Status != models.TalkStatusScheduled {
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only scheduled talks can be marked as completed", http.StatusSeeOther)
+		if r.Header.Get("HX-Request") == "true" {
+			renderManagementCard("Only scheduled talks can be marked as completed", "")
+		} else {
+			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only scheduled talks can be marked as completed", http.StatusSeeOther)
+		}
 		return
 	}
 
 	// Mark as completed
 	talk.Status = models.TalkStatusCompleted
-
 	if err := h.talkRepo.Update(r.Context(), talk); err != nil {
 		http.Error(w, "Failed to complete talk", http.StatusInternalServerError)
 		return
@@ -338,11 +419,16 @@ func (h *TalkHandler) HandleCompleteTalk(w http.ResponseWriter, r *http.Request)
 		for _, attendance := range attendances {
 			if attendance.Status == models.AttendanceStatusConfirmed {
 				attendance.Status = models.AttendanceStatusAttended
-				h.attendanceRepo.Update(r.Context(), attendance)
+				_ = h.attendanceRepo.Update(r.Context(), attendance) // Log error in real app
 			}
 		}
 	}
 
-	// Redirect to the talk detail page
-	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk marked as completed", http.StatusSeeOther)
+	if r.Header.Get("HX-Request") == "true" {
+		// Render the updated management card partial
+		renderManagementCard("", "Talk marked as completed")
+	} else {
+		// Redirect to the talk detail page for non-HTMX requests
+		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk marked as completed", http.StatusSeeOther)
+	}
 }

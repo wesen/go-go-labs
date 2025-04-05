@@ -1,0 +1,99 @@
+<div class=\"d-flex justify-content-between align-items-center mb-4\"><h1>Talks</h1>
+<a href=\"/talks/propose\" class=\"btn btn-primary\">Propose a Talk</a>
+</div><div class=\"card mb-4\"><div class=\"card-header\"><ul class=\"nav nav-tabs card-header-tabs\"><li class=\"nav-item\">
+<a class=\"
+\" href=\"/talks\" hx-get=\"/talks?status=\" hx-target=\"#talks-list-container\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-indicator=\"#talks-loading-indicator\">All</a></li><li class=\"nav-item\">
+<a class=\"
+\" href=\"/talks?status=scheduled\" hx-get=\"/talks?status=scheduled\" hx-target=\"#talks-list-container\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-indicator=\"#talks-loading-indicator\">Scheduled</a></li><li class=\"nav-item\">
+<a class=\"
+\" href=\"/talks?status=proposed\" hx-get=\"/talks?status=proposed\" hx-target=\"#talks-list-container\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-indicator=\"#talks-loading-indicator\">Proposed</a></li><li class=\"nav-item\">
+<a class=\"
+\" href=\"/talks?status=completed\" hx-get=\"/talks?status=completed\" hx-target=\"#talks-list-container\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-indicator=\"#talks-loading-indicator\">Past</a></li></ul></div><div class=\"card-body\"><div id=\"talks-loading-indicator\" class=\"htmx-indicator\">
+</div><div id=\"talks-list-container\">
+</div></div></div>
+<a href=\"
+\" class=\"text-decoration-none text-dark\"><div class=\"card talk-card\"><div class=\"card-body\"><div class=\"d-flex justify-content-between align-items-start mb-2\"><h5 class=\"card-title mb-0\">
+</h5>
+<span class=\"
+\">
+</span></div>
+<p class=\"card-subtitle mb-2 text-muted\">By 
+</p>
+<p class=\"card-text small\"><small>Scheduled for: 
+</small></p>
+<p class=\"card-text small\"><small>Proposed on: 
+</small></p>
+<p class=\"card-text\">
+</p></div><div class=\"card-footer bg-transparent border-top-0\"><small class=\"text-muted\">View Details &rarr;</small></div></div></a>
+ <div id=\"page-alerts\">
+</div><div class=\"row\"><div class=\"col-md-8\"><div class=\"card mb-4\"><div class=\"card-body\"><h1 class=\"card-title\">
+</h1><div class=\"d-flex align-items-center mb-3\">
+<span class=\"
+\">
+</span> 
+<span>Proposed by <strong>
+</strong></span>
+</div>
+<div class=\"mb-3\"><strong>Scheduled for:</strong> 
+</div>
+<h5>Description</h5><p class=\"card-text\">
+</p><div id=\"vote-section\">
+</div><div id=\"attendance-section\">
+</div><div id=\"feedback-section\">
+</div>
+</div></div></div><div class=\"col-md-4\">
+<div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">When & Where</h5></div><div class=\"card-body\">
+<p><strong>Date:</strong> 
+</p><p><strong>Time:</strong> 15:00 - 16:00</p><p><strong>Location:</strong> Conference Room</p>
+</div></div>
+<div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">Speaker</h5></div><div class=\"card-body\"><h5>
+</h5><p>
+</p></div></div>
+<div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">Information</h5></div><div class=\"card-body\"><p><strong>Proposed:</strong> 
+</p>
+<p><strong>Preferred Dates:</strong></p><ul>
+<li>
+</li>
+</ul>
+</div></div></div></div>
+<div class=\"row justify-content-center\"><div class=\"col-md-8\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Propose a Talk</h3></div><div class=\"card-body\"><div id=\"propose-form-container\">
+</div></div></div></div></div>
+<div class=\"row justify-content-center\"><div class=\"col-md-8\"><div class=\"card\"><div class=\"card-header\"><h3 class=\"mb-0\">Edit Talk</h3></div><div class=\"card-body\"><div id=\"edit-form-container\">
+</div></div></div></div></div>
+<div class=\"row justify-content-center\"><div class=\"col-md-8\"><div class=\"card mb-4\"><div class=\"card-header\"><h3 class=\"mb-0\">Schedule Talk: 
+</h3></div><div class=\"card-body\"><p>Speaker: <strong>
+</strong></p><hr><form action=\"
+\" method=\"POST\"><div class=\"mb-3\"><label for=\"scheduled_date\" class=\"form-label\">Select a Date</label> <select class=\"form-select\" id=\"scheduled_date\" name=\"scheduled_date\" required>
+<option value=\"
+\"
+ selected
+>
+ (Friday)</option>
+</select></div><div class=\"d-flex justify-content-between\"><a href=\"
+\" class=\"btn btn-secondary\">Cancel</a> <button type=\"submit\" class=\"btn btn-success\">Schedule Talk</button></div></form></div></div>
+<div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">Talk Rankings for Same Date</h5></div><div class=\"card-body\"><p class=\"text-muted\">Other talks proposed for the same dates, ranked by interest and availability:</p><table class=\"table\"><thead><tr><th>Title</th><th>Interest</th><th>Available Users</th><th>Score</th></tr></thead> <tbody>
+<tr><td><a href=\"
+\">
+</a></td><td>
+</td><td>
+</td><td>
+</td></tr>
+</tbody></table></div></div>
+</div></div>
+<div class=\"d-flex justify-content-between align-items-center mb-4\"><h1>My Talks</h1><a href=\"/talks/propose\" class=\"btn btn-primary\">Propose a Talk</a></div>
+<div class=\"card mb-4\"><div class=\"card-header\"><h3 class=\"mb-0\">Proposed Talks</h3></div><div class=\"card-body\"><div class=\"row\">
+<div class=\"col-md-4 mb-4\">
+</div>
+</div></div></div>
+ 
+<div class=\"card mb-4\"><div class=\"card-header\"><h3 class=\"mb-0\">Upcoming Talks</h3></div><div class=\"card-body\"><div class=\"row\">
+<div class=\"col-md-4 mb-4\">
+</div>
+</div></div></div>
+ 
+<div class=\"card mb-4\"><div class=\"card-header\"><h3 class=\"mb-0\">Past Talks</h3></div><div class=\"card-body\"><div class=\"row\">
+<div class=\"col-md-4 mb-4\">
+</div>
+</div></div></div>
+ 
+<div class=\"alert alert-info\">You haven't proposed any talks yet. Why not share your knowledge with the group?</div>

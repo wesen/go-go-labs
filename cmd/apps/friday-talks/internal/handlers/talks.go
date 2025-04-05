@@ -75,8 +75,17 @@ func (h *TalkHandler) HandleListTalks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Render talks list page
-	templates.TalksList(user, talks, status).Render(r.Context(), w)
+	// Check if it's an HTMX request (by checking the HX-Request header)
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	if isHTMX {
+		// If HTMX, render only the talks list partial
+		w.Header().Set("Content-Type", "text/html")
+		templates.TalksCards(talks).Render(r.Context(), w)
+	} else {
+		// If not HTMX, render the full page
+		templates.TalksList(user, talks, status).Render(r.Context(), w)
+	}
 }
 
 // HandleGetTalk handles displaying a specific talk

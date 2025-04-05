@@ -1,0 +1,96 @@
+package templates
+
+import (
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+	"fmt"
+)
+
+// _talkResourcesSection renders the resources list and the add resource form.
+// It handles HTMX updates for adding and deleting resources.
+templ _talkResourcesSection(user *models.User, talk *models.Talk, resources []*models.Resource, errorString string, successString string) {
+	<div id="talk-resources-section">
+		// Display alerts specific to this section
+		if errorString != "" {
+			@Alert("danger", errorString)
+		}
+		if successString != "" {
+			@Alert("success", successString)
+		}
+
+		<div class="card mb-4">
+			<div class="card-header d-flex justify-content-between align-items-center">
+				<h5 class="mb-0">Resources</h5>
+				<div class="htmx-indicator">
+					@LoadingSpinner()
+				</div>
+			</div>
+			if len(resources) > 0 {
+				<div class="card-body p-0">
+					<ul class="list-group list-group-flush">
+						for _, resource := range resources {
+							<li class="list-group-item d-flex justify-content-between align-items-center">
+								<div>
+									<span class={ "badge me-2", getResourceBadgeColor(resource.Type) }>{ string(resource.Type) }</span>
+									<a href={ templ.SafeURL(resource.URL) } target="_blank">{ resource.Title }</a>
+								</div>
+								if user != nil && (user.ID == talk.SpeakerID || isAdminUser(user)) {
+									<button
+										type="button"
+										class="btn btn-sm btn-outline-danger"
+										hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/resources/%d/delete", talk.ID, resource.ID)) }
+										hx-target="#talk-resources-section"
+										hx-swap="outerHTML"
+										hx-confirm="Are you sure you want to delete this resource?"
+										hx-indicator="#talk-resources-section .htmx-indicator"
+									>
+										Delete
+									</button>
+								}
+							</li>
+						}
+					</ul>
+				</div>
+			} else {
+				<div class="card-body">
+					<p class="text-muted mb-0">No resources added yet.</p>
+				</div>
+			}
+		</div>
+
+		if user != nil && (user.ID == talk.SpeakerID || isAdminUser(user)) {
+			<div class="card mb-4">
+				<div class="card-header">
+					<h5 class="mb-0">Add Resource</h5>
+				</div>
+				<div class="card-body">
+					<form
+						hx-post={ templ.SafeURL(fmt.Sprintf("/talks/%d/resources", talk.ID)) }
+						hx-target="#talk-resources-section"
+						hx-swap="outerHTML"
+						hx-indicator="#talk-resources-section .htmx-indicator"
+					>
+						<div class="mb-3">
+							<label for="title" class="form-label">Title</label>
+							<input type="text" class="form-control" id="title" name="title" required/>
+						</div>
+						<div class="mb-3">
+							<label for="url" class="form-label">URL</label>
+							<input type="url" class="form-control" id="url" name="url" required/>
+						</div>
+						<div class="mb-3">
+							<label for="type" class="form-label">Type</label>
+							<select class="form-select" id="type" name="type" required>
+								<option value="slides">Slides</option>
+								<option value="video">Video</option>
+								<option value="code">Code</option>
+								<option value="article">Article</option>
+								<option value="other">Other</option>
+							</select>
+						</div>
+						<button type="submit" class="btn btn-primary">Add Resource</button>
+					</form>
+				</div>
+			</div>
+		}
+	</div>
+} 

@@ -1,0 +1,58 @@
+package templates
+
+import (
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+	"fmt"
+)
+
+// _calendarGrid renders the HTML table for a single month's calendar view.
+templ _calendarGrid(month CalendarMonth) {
+	<h4 class="mb-3">{ month.Month.String() } { fmt.Sprintf("%d", month.Year) }</h4>
+	<table class="table table-bordered mb-5">
+		<thead>
+			<tr>
+				<th>Sunday</th>
+				<th>Monday</th>
+				<th>Tuesday</th>
+				<th>Wednesday</th>
+				<th>Thursday</th>
+				<th>Friday</th>
+				<th>Saturday</th>
+			</tr>
+		</thead>
+		<tbody>
+			for _, week := range month.Weeks {
+				<tr>
+					for _, day := range week {
+						if day.Date.IsZero() {
+							<td></td>
+						} else {
+							<td class={ 
+								"calendar-day", 
+								templ.KV("has-talk", day.HasTalk),
+								templ.KV("today", day.IsToday),
+								templ.KV("other-month", day.IsOtherMonth),
+							}>
+								<div class="d-flex justify-content-between mb-2">
+									<div>{ day.Date.Format("2") }</div>
+								</div>
+								if day.HasTalk {
+									<div class="p-1">
+										<a href={ templ.SafeURL(fmt.Sprintf("/talks/%d", day.Talk.ID)) } class="d-block">
+											<div class="card-body p-1">
+												<strong>{ day.Talk.Title }</strong>
+												if day.Talk.Speaker != nil {
+													<div class="small text-muted">by { day.Talk.Speaker.Name }</div>
+												}
+											</div>
+										</a>
+									</div>
+								}
+							</td>
+						}
+					}
+				</tr>
+			}
+		</tbody>
+	</table>
+} 

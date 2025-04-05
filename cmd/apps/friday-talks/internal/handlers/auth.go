@@ -31,7 +31,17 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var errorMsg string
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	// Function to render the form (potentially partial)
+	renderForm := func(errorMsg string) {
+		if isHTMX {
+			w.Header().Set("Content-Type", "text/html")
+			templates._loginForm(errorMsg).Render(r.Context(), w)
+		} else {
+			templates.Login(errorMsg).Render(r.Context(), w)
+		}
+	}
 
 	// Process login form submission
 	if r.Method == http.MethodPost {
@@ -45,31 +55,39 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 		// Validate input
 		if email == "" || password == "" {
-			errorMsg = "Email and password are required"
-		} else {
-			// Authenticate user
-			user, err := h.auth.Authenticate(r.Context(), email, password)
-			if err != nil {
-				errorMsg = "Invalid email or password"
-			} else {
-				// Generate token and set cookie
-				token, err := h.auth.GenerateToken(user.ID)
-				if err != nil {
-					http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-					return
-				}
-
-				h.auth.SetTokenCookie(w, token)
-
-				// Redirect to home page
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			}
+			renderForm("Email and password are required")
+			return
 		}
+
+		// Authenticate user
+		user, err := h.auth.Authenticate(r.Context(), email, password)
+		if err != nil {
+			renderForm("Invalid email or password")
+			return
+		}
+
+		// Generate token and set cookie
+		token, err := h.auth.GenerateToken(user.ID)
+		if err != nil {
+			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+			return
+		}
+
+		h.auth.SetTokenCookie(w, token)
+
+		if isHTMX {
+			// Redirect to home page via HTMX
+			w.Header().Set("HX-Redirect", "/")
+			w.WriteHeader(http.StatusOK)
+		} else {
+			// Standard redirect
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+		return
 	}
 
-	// Render login page
-	templates.Login(errorMsg).Render(r.Context(), w)
+	// Render initial login page (full page)
+	renderForm("")
 }
 
 // HandleRegister handles the registration page and form submission
@@ -80,7 +98,17 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var errorMsg string
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	// Function to render the form (potentially partial)
+	renderForm := func(errorMsg string) {
+		if isHTMX {
+			w.Header().Set("Content-Type", "text/html")
+			templates._registerForm(errorMsg).Render(r.Context(), w)
+		} else {
+			templates.Register(errorMsg).Render(r.Context(), w)
+		}
+	}
 
 	// Process registration form submission
 	if r.Method == http.MethodPost {
@@ -96,53 +124,65 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 		// Validate input
 		if name == "" || email == "" || password == "" {
-			errorMsg = "All fields are required"
-		} else if password != confirmPassword {
-			errorMsg = "Passwords do not match"
-		} else if len(password) < 8 {
-			errorMsg = "Password must be at least 8 characters"
-		} else {
-			// Check if email is already in use
-			_, err := h.userRepo.FindByEmail(r.Context(), email)
-			if err == nil {
-				errorMsg = "Email is already in use"
-			} else {
-				// Create new user
-				hashedPassword, err := models.HashPassword(password)
-				if err != nil {
-					http.Error(w, "Failed to hash password", http.StatusInternalServerError)
-					return
-				}
-
-				user := &models.User{
-					Name:         name,
-					Email:        email,
-					PasswordHash: hashedPassword,
-				}
-
-				if err := h.userRepo.Create(r.Context(), user); err != nil {
-					http.Error(w, "Failed to create user", http.StatusInternalServerError)
-					return
-				}
-
-				// Generate token and set cookie
-				token, err := h.auth.GenerateToken(user.ID)
-				if err != nil {
-					http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-					return
-				}
-
-				h.auth.SetTokenCookie(w, token)
-
-				// Redirect to home page
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			}
+			renderForm("All fields are required")
+			return
 		}
+		if password != confirmPassword {
+			renderForm("Passwords do not match")
+			return
+		}
+		if len(password) < 8 {
+			renderForm("Password must be at least 8 characters")
+			return
+		}
+
+		// Check if email is already in use
+		_, err := h.userRepo.FindByEmail(r.Context(), email)
+		if err == nil {
+			renderForm("Email is already in use")
+			return
+		}
+
+		// Create new user
+		hashedPassword, err := models.HashPassword(password)
+		if err != nil {
+			http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+			return
+		}
+
+		newUser := &models.User{
+			Name:         name,
+			Email:        email,
+			PasswordHash: hashedPassword,
+		}
+
+		if err := h.userRepo.Create(r.Context(), newUser); err != nil {
+			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate token and set cookie
+		token, err := h.auth.GenerateToken(newUser.ID)
+		if err != nil {
+			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+			return
+		}
+
+		h.auth.SetTokenCookie(w, token)
+
+		if isHTMX {
+			// Redirect to home page via HTMX
+			w.Header().Set("HX-Redirect", "/")
+			w.WriteHeader(http.StatusOK)
+		} else {
+			// Standard redirect
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+		return
 	}
 
-	// Render registration page
-	templates.Register(errorMsg).Render(r.Context(), w)
+	// Render initial registration page (full page)
+	renderForm("")
 }
 
 // HandleLogout handles user logout
@@ -163,8 +203,23 @@ func (h *AuthHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var errorMsg string
-	var successMsg string
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	// Function to render the form (potentially partial)
+	renderForm := func(successMsg, errorMsg string) {
+		// Re-fetch user in case details changed
+		updatedUser, err := h.userRepo.FindByID(r.Context(), user.ID)
+		if err != nil {
+			// Handle error fetching updated user (should ideally not happen)
+			updatedUser = user // Fallback to potentially stale user data
+		}
+		if isHTMX {
+			w.Header().Set("Content-Type", "text/html")
+			templates._profileForm(updatedUser, successMsg, errorMsg).Render(r.Context(), w)
+		} else {
+			templates.Profile(updatedUser, successMsg, errorMsg).Render(r.Context(), w)
+		}
+	}
 
 	// Process profile update form submission
 	if r.Method == http.MethodPost {
@@ -183,8 +238,7 @@ func (h *AuthHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
 		if email != user.Email {
 			existingUser, err := h.userRepo.FindByEmail(r.Context(), email)
 			if err == nil && existingUser.ID != user.ID {
-				errorMsg = "Email is already in use by another account"
-				templates.Profile(user, successMsg, errorMsg).Render(r.Context(), w)
+				renderForm("", "Email is already in use by another account")
 				return
 			}
 		}
@@ -196,20 +250,17 @@ func (h *AuthHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
 		// Update password if provided
 		if currentPassword != "" && newPassword != "" {
 			if !models.CheckPassword(currentPassword, user.PasswordHash) {
-				errorMsg = "Current password is incorrect"
-				templates.Profile(user, successMsg, errorMsg).Render(r.Context(), w)
+				renderForm("", "Current password is incorrect")
 				return
 			}
 
 			if newPassword != confirmPassword {
-				errorMsg = "New passwords do not match"
-				templates.Profile(user, successMsg, errorMsg).Render(r.Context(), w)
+				renderForm("", "New passwords do not match")
 				return
 			}
 
 			if len(newPassword) < 8 {
-				errorMsg = "New password must be at least 8 characters"
-				templates.Profile(user, successMsg, errorMsg).Render(r.Context(), w)
+				renderForm("", "New password must be at least 8 characters")
 				return
 			}
 
@@ -228,11 +279,13 @@ func (h *AuthHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		successMsg = "Profile updated successfully"
+		// Render the form partial again with a success message
+		renderForm("Profile updated successfully", "")
+		return
 	}
 
-	// Render profile page
-	templates.Profile(user, successMsg, errorMsg).Render(r.Context(), w)
+	// Render initial profile page (full page)
+	renderForm("", "")
 }
 
 // ValidateEmail checks if the email is in a valid format

@@ -1,0 +1,19 @@
+package templates
+
+import "github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+
+templ TalksCards(talks []*models.Talk) {
+	if len(talks) == 0 {
+		<div class="alert alert-info">
+			No talks found matching the selected filter.
+		</div>
+	} else {
+		<div class="row">
+			for _, talk := range talks {
+				<div class="col-md-4 mb-4">
+					@TalkCard(talk)
+				</div>
+			}
+		</div>
+	}
+} 
