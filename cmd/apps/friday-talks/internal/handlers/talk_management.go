@@ -218,45 +218,22 @@ func (h *TalkHandler) HandleCancelTalk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Function to render the management card partial
-	renderManagementCard := func(errorMsg, successMsg string) {
-		// Re-fetch talk to get the latest status
-		latestTalk, err := h.talkRepo.FindByID(r.Context(), talk.ID)
-		if err != nil {
-			// Handle error fetching latest talk, maybe render with old talk and an error?
-			latestTalk = talk // Fallback to old talk data
-			if errorMsg == "" {
-				errorMsg = "Error refreshing talk status"
-			}
-		}
-		w.Header().Set("Content-Type", "text/html")
-		templates._talkManagementCard(user, latestTalk, errorMsg, successMsg).Render(r.Context(), w)
-	}
-
 	// Check if user is the speaker or admin
-	if talk.SpeakerID != user.ID { // Add admin check later if needed
-		if r.Header.Get("HX-Request") == "true" {
-			renderManagementCard("Unauthorized", "")
-		} else {
-			http.Error(w, "Unauthorized", http.StatusForbidden)
-		}
+	if talk.SpeakerID != user.ID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 
-	// Cancel the talk (Update status to Canceled)
+	// Cancel the talk
 	talk.Status = models.TalkStatusCanceled
+
 	if err := h.talkRepo.Update(r.Context(), talk); err != nil {
 		http.Error(w, "Failed to cancel talk", http.StatusInternalServerError)
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
-		// Render the updated management card partial
-		renderManagementCard("", "Talk canceled successfully")
-	} else {
-		// Redirect to the talk detail page for non-HTMX requests
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk canceled successfully", http.StatusSeeOther)
-	}
+	// Redirect to the talk detail page
+	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk canceled successfully", http.StatusSeeOther)
 }
 
 // HandleScheduleTalk handles scheduling a talk
@@ -382,32 +359,15 @@ func (h *TalkHandler) HandleCompleteTalk(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Function to render the management card partial
-	renderManagementCard := func(errorMsg, successMsg string) {
-		// Re-fetch talk to get the latest status
-		latestTalk, err := h.talkRepo.FindByID(r.Context(), talk.ID)
-		if err != nil {
-			latestTalk = talk // Fallback
-			if errorMsg == "" {
-				errorMsg = "Error refreshing talk status"
-			}
-		}
-		w.Header().Set("Content-Type", "text/html")
-		templates._talkManagementCard(user, latestTalk, errorMsg, successMsg).Render(r.Context(), w)
-	}
-
 	// Only allow completing scheduled talks
 	if talk.Status != models.TalkStatusScheduled {
-		if r.Header.Get("HX-Request") == "true" {
-			renderManagementCard("Only scheduled talks can be marked as completed", "")
-		} else {
-			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only scheduled talks can be marked as completed", http.StatusSeeOther)
-		}
+		http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only scheduled talks can be marked as completed", http.StatusSeeOther)
 		return
 	}
 
 	// Mark as completed
 	talk.Status = models.TalkStatusCompleted
+
 	if err := h.talkRepo.Update(r.Context(), talk); err != nil {
 		http.Error(w, "Failed to complete talk", http.StatusInternalServerError)
 		return
@@ -419,16 +379,11 @@ func (h *TalkHandler) HandleCompleteTalk(w http.ResponseWriter, r *http.Request)
 		for _, attendance := range attendances {
 			if attendance.Status == models.AttendanceStatusConfirmed {
 				attendance.Status = models.AttendanceStatusAttended
-				_ = h.attendanceRepo.Update(r.Context(), attendance) // Log error in real app
+				h.attendanceRepo.Update(r.Context(), attendance)
 			}
 		}
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
-		// Render the updated management card partial
-		renderManagementCard("", "Talk marked as completed")
-	} else {
-		// Redirect to the talk detail page for non-HTMX requests
-		http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk marked as completed", http.StatusSeeOther)
-	}
+	// Redirect to the talk detail page
+	http.Redirect(w, r, "/talks/"+talkIDStr+"?success=Talk marked as completed", http.StatusSeeOther)
 }

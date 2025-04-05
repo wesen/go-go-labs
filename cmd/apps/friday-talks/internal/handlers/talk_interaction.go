@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/auth"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+	"github.com/go-go-golems/go-go-labs/internal/helpers"
 )
 
 // HandleVoteOnTalk handles voting on a talk
@@ -310,7 +311,7 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 
 	// Check if user is the speaker
 	if talk.SpeakerID != user.ID {
-		if r.Header.Get("HX-Request") == "true" {
+		if helpers.IsHtmxRequest(r) {
 			renderResourcesPartial("Only the speaker can add resources", "")
 		} else {
 			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can add resources to a talk", http.StatusSeeOther)
@@ -330,7 +331,7 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 
 	// Validate input
 	if title == "" || url == "" {
-		if r.Header.Get("HX-Request") == "true" {
+		if helpers.IsHtmxRequest(r) {
 			renderResourcesPartial("Title and URL are required", "")
 		} else {
 			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Title and URL are required", http.StatusSeeOther)
@@ -351,7 +352,7 @@ func (h *TalkHandler) HandleAddResource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if helpers.IsHtmxRequest(r) {
 		renderResourcesPartial("", "Resource added successfully")
 	} else {
 		// Redirect back to talk page for non-HTMX requests
@@ -410,7 +411,7 @@ func (h *TalkHandler) HandleDeleteResource(w http.ResponseWriter, r *http.Reques
 
 	// Check if user is the speaker
 	if talk.SpeakerID != user.ID {
-		if r.Header.Get("HX-Request") == "true" {
+		if helpers.IsHtmxRequest(r) {
 			renderResourcesPartial("Only the speaker can delete resources", "")
 		} else {
 			http.Redirect(w, r, "/talks/"+talkIDStr+"?error=Only the speaker can delete resources from a talk", http.StatusSeeOther)
@@ -424,7 +425,7 @@ func (h *TalkHandler) HandleDeleteResource(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if helpers.IsHtmxRequest(r) {
 		renderResourcesPartial("", "Resource deleted successfully")
 	} else {
 		// Redirect back to talk page for non-HTMX requests

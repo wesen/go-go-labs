@@ -201,8 +201,33 @@ templ TalkDetail(
 			</div>
 
 			<div class="col-md-4">
-				// Talk Management Card - Handled by _talkManagementCard partial
-				@_talkManagementCard(user, talk, "", "")
+				if user != nil && (user.ID == talk.SpeakerID || isAdminUser(user)) {
+					<div class="card mb-4">
+						<div class="card-header">
+							<h5 class="mb-0">Manage Talk</h5>
+						</div>
+						<div class="card-body">
+							if talk.Status == models.TalkStatusProposed {
+								if isAdminUser(user) {
+									<a href={ templ.SafeURL(fmt.Sprintf("/talks/%d/schedule", talk.ID)) } class="btn btn-success d-block mb-2">Schedule This Talk</a>
+								}
+								<a href={ templ.SafeURL(fmt.Sprintf("/talks/%d/edit", talk.ID)) } class="btn btn-primary d-block mb-2">Edit Talk</a>
+								<form action={ templ.SafeURL(fmt.Sprintf("/talks/%d/cancel", talk.ID)) } method="POST" class="d-block">
+									<button type="submit" class="btn btn-danger d-block w-100" onclick="return confirm('Are you sure you want to cancel this talk?')">Cancel Talk</button>
+								</form>
+							} else if talk.Status == models.TalkStatusScheduled {
+								if isAdminUser(user) {
+									<form action={ templ.SafeURL(fmt.Sprintf("/talks/%d/complete", talk.ID)) } method="POST" class="d-block mb-2">
+										<button type="submit" class="btn btn-success d-block w-100">Mark as Completed</button>
+									</form>
+									<form action={ templ.SafeURL(fmt.Sprintf("/talks/%d/cancel", talk.ID)) } method="POST" class="d-block">
+										<button type="submit" class="btn btn-danger d-block w-100" onclick="return confirm('Are you sure you want to cancel this talk?')">Cancel Talk</button>
+									</form>
+								}
+							}
+						</div>
+					</div>
+				}
 
 				if talk.Status == models.TalkStatusScheduled {
 					<div class="card mb-4">

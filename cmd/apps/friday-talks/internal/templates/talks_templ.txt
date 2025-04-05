@@ -42,6 +42,16 @@
 </div><div id=\"feedback-section\">
 </div>
 </div></div></div><div class=\"col-md-4\">
+<div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">Manage Talk</h5></div><div class=\"card-body\">
+<a href=\"
+\" class=\"btn btn-success d-block mb-2\">Schedule This Talk</a>
+ <a href=\"
+\" class=\"btn btn-primary d-block mb-2\">Edit Talk</a><form action=\"
+\" method=\"POST\" class=\"d-block\"><button type=\"submit\" class=\"btn btn-danger d-block w-100\" onclick=\"return confirm(&#39;Are you sure you want to cancel this talk?&#39;)\">Cancel Talk</button></form>
+<form action=\"
+\" method=\"POST\" class=\"d-block mb-2\"><button type=\"submit\" class=\"btn btn-success d-block w-100\">Mark as Completed</button></form><form action=\"
+\" method=\"POST\" class=\"d-block\"><button type=\"submit\" class=\"btn btn-danger d-block w-100\" onclick=\"return confirm(&#39;Are you sure you want to cancel this talk?&#39;)\">Cancel Talk</button></form>
+</div></div>
 <div class=\"card mb-4\"><div class=\"card-header\"><h5 class=\"mb-0\">When & Where</h5></div><div class=\"card-body\">
 <p><strong>Date:</strong> 
 </p><p><strong>Time:</strong> 15:00 - 16:00</p><p><strong>Location:</strong> Conference Room</p>

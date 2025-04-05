@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -41,7 +40,6 @@ type ResourceRepository interface {
 	Delete(ctx context.Context, id int) error
 	ListByTalk(ctx context.Context, talkID int) ([]*Resource, error)
 	ListByType(ctx context.Context, resourceType ResourceType) ([]*Resource, error)
-	FindByTalkID(ctx context.Context, talkID int) ([]*Resource, error)
 }
 
 // SQLiteResourceRepository implements ResourceRepository for SQLite
@@ -261,43 +259,6 @@ func (r *SQLiteResourceRepository) ListByType(ctx context.Context, resourceType 
 
 	if err = rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "error iterating resource rows")
-	}
-
-	return resources, nil
-}
-
-// FindByTalkID retrieves all resources for a given talk ID
-func (r *SQLiteResourceRepository) FindByTalkID(ctx context.Context, talkID int) ([]*Resource, error) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, talk_id, title, url, type, created_at, updated_at
-		FROM resources
-		WHERE talk_id = ?
-		ORDER BY created_at ASC
-	`, talkID)
-	if err != nil {
-		return nil, fmt.Errorf("querying resources by talk ID %d: %w", talkID, err)
-	}
-	defer rows.Close()
-
-	var resources []*Resource
-	for rows.Next() {
-		var resource Resource
-		if err := rows.Scan(
-			&resource.ID,
-			&resource.TalkID,
-			&resource.Title,
-			&resource.URL,
-			&resource.Type,
-			&resource.CreatedAt,
-			&resource.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scanning resource row: %w", err)
-		}
-		resources = append(resources, &resource)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating resource rows: %w", err)
 	}
 
 	return resources, nil
