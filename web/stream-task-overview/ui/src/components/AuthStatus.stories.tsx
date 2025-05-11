@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import AuthStatus from './AuthStatus';
 import { http, HttpResponse } from 'msw';
-import { store } from '../../.storybook/preview';
-import { initialState as authInitialState, resetAuthState } from '../store/slices/authSlice';
+import { initialState as authInitialState } from '../store/slices/authSlice';
 import { baseUrl } from '../api/baseApi';
 
 const meta: Meta<typeof AuthStatus> = {
@@ -17,16 +16,14 @@ const meta: Meta<typeof AuthStatus> = {
 export default meta;
 type Story = StoryObj<typeof AuthStatus>;
 
-const resetAuthStore = () => {
-  store.dispatch(resetAuthState(authInitialState));
-};
-
 // Authenticated admin user story
 export const AuthenticatedAdmin: Story = {
-  play: async () => {
-    resetAuthStore();
-  },
   parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState }
+      }
+    },
     msw: {
       handlers: [
         http.get(`${baseUrl}/auth/status`, () => {
@@ -39,10 +36,12 @@ export const AuthenticatedAdmin: Story = {
 
 // Authenticated non-admin user story
 export const AuthenticatedUser: Story = {
-  play: async () => {
-    resetAuthStore();
-  },
   parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState }
+      }
+    },
     msw: {
       handlers: [
         http.get(`${baseUrl}/auth/status`, () => {
@@ -55,10 +54,12 @@ export const AuthenticatedUser: Story = {
 
 // Not authenticated user story
 export const NotAuthenticated: Story = {
-  play: async () => {
-    resetAuthStore();
-  },
   parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState }
+      }
+    },
     msw: {
       handlers: [
         http.get(`${baseUrl}/auth/status`, () => {

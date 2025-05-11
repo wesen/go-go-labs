@@ -1,19 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React from 'react';
 import StreamInfoDisplay from './StreamInfoDisplay';
-import { store } from '../../.storybook/preview';
-import {
-  toggleEditMode,
-  fetchStreamInfo,
-  initialState as streamInitialState,
-  setStreamInfo as setStreamInfoAction
-} from '../store/slices/streamSlice';
-import {
-  setCredentials,
-  logout as logoutAction,
-  initialState as authInitialState,
-  resetAuthState
-} from '../store/slices/authSlice';
+import { initialState as streamInitialState } from '../store/slices/streamSlice';
+import { initialState as authInitialState } from '../store/slices/authSlice';
+import { http, HttpResponse } from 'msw';
+import { baseUrl } from '../api/baseApi';
 
 const meta: Meta<typeof StreamInfoDisplay> = {
   title: 'Components/StreamInfoDisplay',
@@ -37,52 +27,95 @@ const baseStreamInfo = {
   currentTask: 'Default Task'
 };
 
-const resetStore = () => {
-  store.dispatch({ type: 'STREAM_RESET_STATE', payload: { ...streamInitialState, info: baseStreamInfo } });
-  store.dispatch(resetAuthState(authInitialState));
-};
-
 export const Default: Story = {
-  play: async () => {
-    resetStore();
-    store.dispatch(setCredentials({ token: 'mock-token-admin', isAdmin: true }));
-    store.dispatch(fetchStreamInfo.fulfilled(baseStreamInfo, "requestId", undefined));
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: true, token: 'mock-token-admin' },
+        stream: { 
+          ...streamInitialState, 
+          info: baseStreamInfo,
+          loading: { ...streamInitialState.loading, streamInfo: false },
+          error: { ...streamInitialState.error, streamInfo: null }
+        },
+      },
+    },
+    msw: {
+      handlers: [
+        http.get(`${baseUrl}/stream`, () => {
+          return HttpResponse.json(baseStreamInfo);
+        }),
+      ],
+    },
   },
 };
 
 export const UserView: Story = {
-  play: async () => {
-    resetStore();
-    store.dispatch(setCredentials({ token: 'mock-token-user', isAdmin: false }));
-    store.dispatch(fetchStreamInfo.fulfilled(baseStreamInfo, "requestId", undefined));
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: false, token: 'mock-token-user' },
+        stream: { 
+          ...streamInitialState, 
+          info: baseStreamInfo,
+          loading: { ...streamInitialState.loading, streamInfo: false },
+          error: { ...streamInitialState.error, streamInfo: null }
+        },
+      },
+    },
   },
 };
 
 export const EditMode: Story = {
-  play: async () => {
-    resetStore();
-    store.dispatch(setCredentials({ token: 'mock-token-admin', isAdmin: true }));
-    store.dispatch(fetchStreamInfo.fulfilled(baseStreamInfo, "requestId", undefined));
-    store.dispatch(toggleEditMode());
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: true, token: 'mock-token-admin' },
+        stream: { 
+          ...streamInitialState, 
+          info: baseStreamInfo,
+          isEditing: true,
+          loading: { ...streamInitialState.loading, streamInfo: false },
+          error: { ...streamInitialState.error, streamInfo: null }
+        },
+      },
+    },
   },
 };
 
 export const Loading: Story = {
-  play: async () => {
-    resetStore();
-    store.dispatch(setCredentials({ token: 'mock-token-admin', isAdmin: true }));
-    store.dispatch(fetchStreamInfo.pending("requestId", undefined, undefined));
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: true, token: 'mock-token-admin' },
+        stream: { 
+          ...streamInitialState, 
+          loading: { ...streamInitialState.loading, streamInfo: true },
+          error: { ...streamInitialState.error, streamInfo: null }
+        },
+      },
+    },
   },
 };
 
 export const Error: Story = {
-  play: async () => {
-    resetStore();
-    store.dispatch(setCredentials({ token: 'mock-token-admin', isAdmin: true }));
-    const errorPayload = {
-      name: 'StorybookMockError',
-      message: 'Failed to load stream information (Storybook mock)',
-    };
-    store.dispatch(fetchStreamInfo.rejected(errorPayload, "requestId", undefined, undefined));
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: true, token: 'mock-token-admin' },
+        stream: { 
+          ...streamInitialState, 
+          loading: { ...streamInitialState.loading, streamInfo: false },
+          error: { ...streamInitialState.error, streamInfo: 'Failed to load stream information (Storybook mock)' }
+        },
+      },
+    },
+    msw: {
+      handlers: [
+        http.get(`${baseUrl}/stream`, () => {
+          return new HttpResponse(null, { status: 500, statusText: 'Server Error' });
+        }),
+      ],
+    },
   },
 };
