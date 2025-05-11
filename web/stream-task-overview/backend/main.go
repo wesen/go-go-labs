@@ -112,9 +112,17 @@ func main() {
 	log.Info().Msg("Setting up API routes")
 	api := e.Group("/api")
 
+	// Create GitHub handler
+	log.Info().Msg("Creating GitHub handler")
+	githubHandler := NewGitHubHandler(store)
+
 	// Public routes
 	api.GET("/stream", h.GetStreamInfo)
 	api.GET("/stream/steps", h.GetSteps) 
+	api.GET("/stream/transcript", h.GetTranscript)
+	api.GET("/stream/transcript/types/:type", h.GetTranscriptByType)
+	api.GET("/github/info", githubHandler.GetGitHubInfo)
+	api.GET("/github/commits", githubHandler.GetGitHubCommits)
 
 	// Protected routes
 	adminGroup := api.Group("", auth.RequireAuth, auth.AdminOnly)
@@ -123,6 +131,9 @@ func main() {
 	adminGroup.POST("/stream/steps/upcoming", h.AddUpcomingStep)
 	adminGroup.POST("/stream/steps/complete", h.CompleteActiveStep)
 	adminGroup.PUT("/stream/steps/reactivate", h.ReactivateStep)
+	adminGroup.POST("/stream/transcript", h.AddTranscriptEntry)
+	adminGroup.POST("/github/connect", githubHandler.ConnectGitHub)
+	adminGroup.POST("/github/webhook", githubHandler.HandleGitHubWebhook)
 
 	// Serve frontend files
 	e.Static("/", "../ui/dist")

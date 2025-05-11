@@ -86,6 +86,48 @@ func (s *StreamStore) initSchema() {
 		log.Fatal().Err(err).Msg("Failed to create steps table")
 	}
 
+	// Create transcript_entries table
+	log.Debug().Msg("Creating transcript_entries table if not exists")
+	_, err = s.db.Exec(`
+	CREATE TABLE IF NOT EXISTS transcript_entries (
+		id TEXT PRIMARY KEY,
+		timestamp DATETIME NOT NULL,
+		type TEXT NOT NULL,
+		content TEXT NOT NULL,
+		task_name TEXT,
+		commit_hash TEXT,
+		commit_url TEXT,
+		time_range_start DATETIME,
+		time_range_end DATETIME,
+		title TEXT,
+		speaker TEXT,
+		duration INTEGER
+	);
+	`)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create transcript_entries table")
+	}
+
+	// Create github_integration table
+	log.Debug().Msg("Creating github_integration table if not exists")
+	_, err = s.db.Exec(`
+	CREATE TABLE IF NOT EXISTS github_integration (
+		id INTEGER PRIMARY KEY,
+		token TEXT NOT NULL,
+		repo_owner TEXT NOT NULL,
+		repo_name TEXT NOT NULL,
+		current_branch TEXT NOT NULL,
+		latest_commit_hash TEXT,
+		latest_commit_message TEXT,
+		latest_commit_author TEXT,
+		latest_commit_date DATETIME,
+		latest_commit_url TEXT
+	);
+	`)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create github_integration table")
+	}
+
 	log.Info().Msg("Database schema setup complete")
 }
 
@@ -522,4 +564,330 @@ func (s *StreamStore) ReactivateStep(stepID string, source string) {
 	}
 
 	log.Info().Str("stepID", stepID).Str("description", steps.Active.Description).Str("source", source).Msg("Step reactivated successfully")
+}
+
+// GetTranscriptEntries returns all transcript entries
+func (s *StreamStore) GetTranscriptEntries() ([]TranscriptEntry, error) {
+	log.Debug().Msg("Getting transcript entries")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	query := s.sql.Select("*").From("transcript_entries").OrderBy("timestamp DESC")
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to build SQL for GetTranscriptEntries")
+		return nil, errors.Wrap(err, "build SQL")
+	}
+
+	var entries []TranscriptEntry
+	err = s.db.Select(&entries, sql, args...)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get transcript entries from database")
+		return nil, errors.Wrap(err, "select from database")
+	}
+
+	// Process TimeRange fields which are stored in separate columns
+	for i := range entries {
+		if entries[i].TimeRange == nil && 
+		   (entries[i].Type == TranscriptTypeParagraph || entries[i].Type == TranscriptTypeTranscript) {
+			// Check if we have time range values
+			var start, end time.Time
+			
+			// Get the time range start and end from rows
+			row := s.db.QueryRow("SELECT time_range_start, time_range_end FROM transcript_entries WHERE id = ?", entries[i].ID)
+			err := row.Scan(&start, &end)
+			
+			if err == nil && !start.IsZero() && !end.IsZero() {
+				entries[i].TimeRange = &TimeRange{
+					Start: start,
+					End:   end,
+				}
+			}
+		}
+	}
+
+	log.Debug().Int("count", len(entries)).Msg("Retrieved transcript entries")
+	return entries, nil
+}
+
+// GetTranscriptEntriesByType returns transcript entries filtered by type
+func (s *StreamStore) GetTranscriptEntriesByType(entryType TranscriptEntryType) ([]TranscriptEntry, error) {
+	log.Debug().Str("type", string(entryType)).Msg("Getting transcript entries by type")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	query := s.sql.Select("*").From("transcript_entries").Where(squirrel.Eq{"type": entryType}).OrderBy("timestamp DESC")
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		log.Error().Err(err).Str("type", string(entryType)).Msg("Failed to build SQL for GetTranscriptEntriesByType")
+		return nil, errors.Wrap(err, "build SQL")
+	}
+
+	var entries []TranscriptEntry
+	err = s.db.Select(&entries, sql, args...)
+	if err != nil {
+		log.Error().Err(err).Str("type", string(entryType)).Msg("Failed to get transcript entries by type from database")
+		return nil, errors.Wrap(err, "select from database")
+	}
+
+	// Process TimeRange fields which are stored in separate columns
+	for i := range entries {
+		if entries[i].TimeRange == nil && 
+		   (entries[i].Type == TranscriptTypeParagraph || entries[i].Type == TranscriptTypeTranscript) {
+			// Check if we have time range values
+			var start, end time.Time
+			
+			// Get the time range start and end from rows
+			row := s.db.QueryRow("SELECT time_range_start, time_range_end FROM transcript_entries WHERE id = ?", entries[i].ID)
+			err := row.Scan(&start, &end)
+			
+			if err == nil && !start.IsZero() && !end.IsZero() {
+				entries[i].TimeRange = &TimeRange{
+					Start: start,
+					End:   end,
+				}
+			}
+		}
+	}
+
+	log.Debug().Str("type", string(entryType)).Int("count", len(entries)).Msg("Retrieved transcript entries by type")
+	return entries, nil
+}
+
+// AddTranscriptEntry adds a new transcript entry
+func (s *StreamStore) AddTranscriptEntry(entry TranscriptEntry) (TranscriptEntry, error) {
+	log.Debug().Interface("entry", entry).Msg("Adding transcript entry")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Generate ID if not provided
+	if entry.ID == "" {
+		entry.ID = uuid.NewString()
+	}
+
+	// Ensure timestamp is set
+	if entry.Timestamp.IsZero() {
+		entry.Timestamp = time.Now()
+	}
+
+	// Prepare columns and values map
+	columns := []string{"id", "timestamp", "type", "content"}
+	values := []interface{}{entry.ID, entry.Timestamp, entry.Type, entry.Content}
+
+	// Add optional fields if present
+	if entry.TaskName != nil {
+		columns = append(columns, "task_name")
+		values = append(values, *entry.TaskName)
+	}
+
+	if entry.CommitHash != nil {
+		columns = append(columns, "commit_hash")
+		values = append(values, *entry.CommitHash)
+	}
+
+	if entry.CommitURL != nil {
+		columns = append(columns, "commit_url")
+		values = append(values, *entry.CommitURL)
+	}
+
+	if entry.TimeRange != nil {
+		columns = append(columns, "time_range_start", "time_range_end")
+		values = append(values, entry.TimeRange.Start, entry.TimeRange.End)
+	}
+
+	if entry.Title != nil {
+		columns = append(columns, "title")
+		values = append(values, *entry.Title)
+	}
+
+	if entry.Speaker != nil {
+		columns = append(columns, "speaker")
+		values = append(values, *entry.Speaker)
+	}
+
+	if entry.Duration != nil {
+		columns = append(columns, "duration")
+		values = append(values, *entry.Duration)
+	}
+
+	// Build and execute query
+	query := s.sql.Insert("transcript_entries").Columns(columns...).Values(values...)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		log.Error().Err(err).Interface("entry", entry).Msg("Failed to build SQL for AddTranscriptEntry")
+		return TranscriptEntry{}, errors.Wrap(err, "build SQL")
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	if err != nil {
+		log.Error().Err(err).Interface("entry", entry).Msg("Failed to insert transcript entry")
+		return TranscriptEntry{}, errors.Wrap(err, "insert into database")
+	}
+
+	log.Info().Str("id", entry.ID).Str("type", string(entry.Type)).Msg("Transcript entry added successfully")
+	return entry, nil
+}
+
+// GetGitHubInfo returns the GitHub repository information
+func (s *StreamStore) GetGitHubInfo() (GitHubInfo, error) {
+	log.Debug().Msg("Getting GitHub info")
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	query := s.sql.Select("*").From("github_integration").Limit(1)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to build SQL for GetGitHubInfo")
+		return GitHubInfo{}, errors.Wrap(err, "build SQL")
+	}
+
+	var info GitHubInfo
+	err = s.db.Get(&info, sql, args...)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get GitHub info from database")
+		return GitHubInfo{}, errors.Wrap(err, "select from database")
+	}
+
+	log.Debug().Interface("info", info).Msg("Retrieved GitHub info")
+	return info, nil
+}
+
+// ConnectGitHub connects to a GitHub repository
+func (s *StreamStore) ConnectGitHub(info GitHubInfo) error {
+	log.Debug().Interface("info", info).Msg("Connecting to GitHub")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Check if a connection already exists
+	var count int
+	err := s.db.Get(&count, "SELECT COUNT(*) FROM github_integration")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to check GitHub connection")
+		return errors.Wrap(err, "check connection")
+	}
+
+	if count > 0 {
+		// Update existing connection
+		log.Debug().Msg("Updating existing GitHub connection")
+		query := s.sql.Update("github_integration").SetMap(map[string]interface{}{
+			"token":           info.Token,
+			"repo_owner":      info.RepoOwner,
+			"repo_name":       info.RepoName,
+			"current_branch":  info.CurrentBranch,
+		})
+
+		sql, args, err := query.ToSql()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to build SQL for updating GitHub connection")
+			return errors.Wrap(err, "build SQL")
+		}
+
+		_, err = s.db.Exec(sql, args...)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to update GitHub connection")
+			return errors.Wrap(err, "update connection")
+		}
+	} else {
+		// Create new connection
+		log.Debug().Msg("Creating new GitHub connection")
+		query := s.sql.Insert("github_integration").Columns(
+			"token", "repo_owner", "repo_name", "current_branch",
+		).Values(
+			info.Token, info.RepoOwner, info.RepoName, info.CurrentBranch,
+		)
+
+		sql, args, err := query.ToSql()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to build SQL for creating GitHub connection")
+			return errors.Wrap(err, "build SQL")
+		}
+
+		_, err = s.db.Exec(sql, args...)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create GitHub connection")
+			return errors.Wrap(err, "create connection")
+		}
+	}
+
+	log.Info().Str("repo", info.RepoOwner+"/"+info.RepoName).Msg("GitHub connection saved successfully")
+	return nil
+}
+
+// UpdateGitHubCommit updates the latest commit information
+func (s *StreamStore) UpdateGitHubCommit(commit CommitInfo) error {
+	log.Debug().Interface("commit", commit).Msg("Updating GitHub commit info")
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Check if a connection exists
+	var count int
+	err := s.db.Get(&count, "SELECT COUNT(*) FROM github_integration")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to check GitHub connection")
+		return errors.Wrap(err, "check connection")
+	}
+
+	if count == 0 {
+		log.Error().Msg("No GitHub connection exists")
+		return errors.New("no GitHub connection")
+	}
+
+	// Update commit information
+	query := s.sql.Update("github_integration").SetMap(map[string]interface{}{
+		"latest_commit_hash":    commit.Hash,
+		"latest_commit_message": commit.Message,
+		"latest_commit_author":  commit.Author,
+		"latest_commit_date":    commit.Date,
+		"latest_commit_url":     commit.URL,
+	})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to build SQL for updating GitHub commit")
+		return errors.Wrap(err, "build SQL")
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to update GitHub commit info")
+		return errors.Wrap(err, "update commit info")
+	}
+
+	log.Info().Str("hash", commit.Hash).Msg("GitHub commit info updated successfully")
+	return nil
+}
+
+// GetCommits returns the latest commits (mock implementation for now)
+func (s *StreamStore) GetCommits(limit int) ([]CommitInfo, error) {
+	if limit <= 0 {
+		limit = 10 // Default limit
+	}
+
+	// First try to get GitHub info for repo details
+	githubInfo, err := s.GetGitHubInfo()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get GitHub info")
+		return nil, errors.Wrap(err, "get GitHub info")
+	}
+
+	// This would normally fetch from GitHub API
+	// For now, just return the latest commit we have stored
+	if githubInfo.LatestCommitHash != "" {
+		log.Debug().Str("hash", githubInfo.LatestCommitHash).Msg("Returning stored commit")
+		return []CommitInfo{{
+			Hash:    githubInfo.LatestCommitHash,
+			Message: githubInfo.LatestCommitMsg,
+			Author:  githubInfo.LatestCommitAuthor,
+			Date:    githubInfo.LatestCommitDate,
+			URL:     githubInfo.LatestCommitURL,
+		}}, nil
+	}
+
+	// If no commits found, return empty array
+	log.Debug().Msg("No commits found")
+	return []CommitInfo{}, nil
 }

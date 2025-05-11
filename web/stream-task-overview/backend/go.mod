@@ -18,6 +18,7 @@ require (
 
 require (
 	github.com/agentstation/egothic v0.0.0-20241022054342-cca78ac2d709 // indirect
+	github.com/brianvoe/gofakeit/v6 v6.28.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
