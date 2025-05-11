@@ -19,13 +19,20 @@ const App: React.FC = () => {
         // Use try/catch to handle potential errors during initialization
         // Note: In a real app with a real backend, these would succeed
         // The current errors are because there's no actual backend running
-        await dispatch(fetchStreamInfo()).unwrap();
-        await dispatch(fetchAllSteps()).unwrap();
-        await dispatch(fetchTranscript()).unwrap();
-        await dispatch(fetchGithubInfo()).unwrap();
+        const promises = [
+          dispatch(fetchStreamInfo()),
+          dispatch(fetchAllSteps()),
+          dispatch(fetchTranscript()),
+          dispatch(fetchGithubInfo())
+        ];
+        
+        // We use Promise.allSettled instead of Promise.all to continue even if some promises fail
+        await Promise.allSettled(promises);
       } catch (error) {
         console.error('Error initializing app data:', error);
       } finally {
+        // Always set data as initialized so app can render
+        // The mock middleware will provide fallback data
         setDataInitialized(true);
       }
     };

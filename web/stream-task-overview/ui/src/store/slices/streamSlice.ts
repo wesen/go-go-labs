@@ -76,7 +76,7 @@ export interface StreamState {
   stepIdMapping: Record<string, string>;
 }
 
-const initialState: StreamState = {
+export const initialState: StreamState = {
   info: {
     title: "Building a React Component Library",
     description: "Creating reusable UI components with TailwindCSS",

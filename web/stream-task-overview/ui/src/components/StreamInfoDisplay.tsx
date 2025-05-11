@@ -1,9 +1,14 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { toggleEditMode, updateStreamInfo, fetchStreamInfo } from '../store/slices/streamSlice';
 import { AppDispatch } from '../store';
+import { toggleEditMode, updateStreamInfo, fetchStreamInfo } from '../store/slices/streamSlice';
 import { useGetStreamInfoQuery, useUpdateStreamInfoMutation } from '../api/streamApi';
+import {
+  selectStreamInfo,
+  selectIsEditing,
+  selectStreamInfoLoading,
+  selectStreamInfoError
+} from '../store/selectors';
 
 interface EditableFieldProps {
   label: string;
@@ -37,13 +42,11 @@ const StreamInfoDisplay: React.FC = () => {
   const { data: streamInfo, isLoading: isLoadingQuery, error: queryError } = useGetStreamInfoQuery();
   const [updateInfo, { isLoading: isUpdating }] = useUpdateStreamInfoMutation();
   
-  // Redux state
-  const { info, isEditing, loading, error } = useSelector((state: RootState) => ({
-    info: state.stream.info,
-    isEditing: state.stream.isEditing,
-    loading: state.stream.loading.streamInfo,
-    error: state.stream.error.streamInfo
-  }));
+  // Use memoized selectors to prevent unnecessary re-renders
+  const info = useSelector(selectStreamInfo);
+  const isEditing = useSelector(selectIsEditing);
+  const loading = useSelector(selectStreamInfoLoading);
+  const error = useSelector(selectStreamInfoError);
 
   // Fetch stream info on component mount
   useEffect(() => {

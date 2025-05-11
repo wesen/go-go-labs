@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../store';
+import { AppDispatch } from '../store';
 import { fetchGithubInfo, connectToGithub } from '../store/slices/streamSlice';
 import { useGetGithubInfoQuery, useConnectGithubMutation } from '../api/githubApi';
+import {
+  selectGithubData,
+  selectGithubLoading,
+  selectGithubError
+} from '../store/selectors';
 
 const GithubInfoPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -16,12 +21,10 @@ const GithubInfoPanel: React.FC = () => {
   });
   const [connectToGithubRepo, { isLoading: isConnecting }] = useConnectGithubMutation();
   
-  // Redux state
-  const { github, loading, error } = useSelector((state: RootState) => ({
-    github: state.stream.github,
-    loading: state.stream.loading.github,
-    error: state.stream.error.github
-  }));
+  // Use memoized selectors to prevent unnecessary re-renders
+  const github = useSelector(selectGithubData);
+  const loading = useSelector(selectGithubLoading);
+  const error = useSelector(selectGithubError);
 
   // Fetch GitHub info on component mount
   useEffect(() => {

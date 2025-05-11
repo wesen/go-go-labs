@@ -4,7 +4,6 @@ import { AppDispatch } from '../store';
 import {
   fetchAllSteps,
   addNewUpcomingStep,
-  setNewActiveStep,
   completeActiveStep,
   reactivateStepFromSource
 } from '../store/slices/streamSlice';
@@ -19,16 +18,16 @@ const TaskStepsPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [newStep, setNewStep] = useState('');
   
-  // RTK Query approach
-  const { data: stepsData, isLoading: stepsQueryLoading, refetch: refetchSteps } = useGetAllStepsQuery(undefined, {
-    // Skip initial fetch since we'll use the thunk for the first load
-    skip: true
-  });
-  
   // Use memoized selectors to prevent unnecessary re-renders
   const { completedSteps, activeStep, upcomingSteps, stepIdMapping } = useSelector(selectStepsData);
   const loading = useSelector(selectStepsLoading);
   const error = useSelector(selectStepsError);
+  
+  // RTK Query approach
+  const { isLoading: stepsQueryLoading, refetch: refetchSteps } = useGetAllStepsQuery(undefined, {
+    // Skip initial fetch since we'll use the thunk for the first load
+    skip: true
+  });
 
   // Fetch steps on component mount
   useEffect(() => {
@@ -42,17 +41,26 @@ const TaskStepsPanel: React.FC = () => {
     if (newStep.trim()) {
       dispatch(addNewUpcomingStep(newStep.trim()))
         .unwrap()
-        .then(() => setNewStep(''));
+        .then(() => setNewStep(''))
+        .catch(error => {
+          console.error('Failed to add upcoming step:', error);
+        });
     }
   };
 
   const handleCompleteCurrentStep = () => {
-    dispatch(completeActiveStep());
+    dispatch(completeActiveStep())
+      .catch(error => {
+        console.error('Failed to complete current step:', error);
+      });
   };
 
   const handleSetActive = (step: string, source: 'upcoming' | 'completed') => {
-    const stepId = stepIdMapping[step] || '';
-    dispatch(reactivateStepFromSource({ step, source, stepId }));
+    const stepId = stepIdMapping?.[step] || '';
+    dispatch(reactivateStepFromSource({ step, source, stepId }))
+      .catch(error => {
+        console.error('Failed to reactivate step:', error);
+      });
   };
 
   if (loading || stepsQueryLoading) {
@@ -80,7 +88,7 @@ const TaskStepsPanel: React.FC = () => {
       {/* Completed Steps */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2 text-gray-700">Completed</h3>
-        {completedSteps.length === 0 ? (
+        {!completedSteps || completedSteps.length === 0 ? (
           <p className="text-gray-500 italic">No completed tasks yet</p>
         ) : (
           <ul className="space-y-2">
@@ -121,7 +129,7 @@ const TaskStepsPanel: React.FC = () => {
       {/* Upcoming Steps */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2 text-gray-700">Upcoming</h3>
-        {upcomingSteps.length === 0 ? (
+        {!upcomingSteps || upcomingSteps.length === 0 ? (
           <p className="text-gray-500 italic">No upcoming tasks</p>
         ) : (
           <ul className="space-y-2">

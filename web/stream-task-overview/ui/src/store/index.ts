@@ -4,6 +4,7 @@ import { streamApi } from '../api/streamApi';
 import { stepsApi } from '../api/stepsApi';
 import { transcriptApi } from '../api/transcriptApi';
 import { githubApi } from '../api/githubApi';
+import { mockApiMiddleware } from '../api/mockApiMiddleware';
 
 export const store = configureStore({
   reducer: {
@@ -18,7 +19,8 @@ export const store = configureStore({
       streamApi.middleware,
       stepsApi.middleware,
       transcriptApi.middleware,
-      githubApi.middleware
+      githubApi.middleware,
+      mockApiMiddleware // Add mock middleware to handle CORS issues in development
     ),
 });
 
