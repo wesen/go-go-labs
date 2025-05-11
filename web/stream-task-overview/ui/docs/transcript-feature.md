@@ -1,18 +1,19 @@
-# Stream Transcript Feature Documentation
+# Stream Notes Feature Documentation
 
 ## Overview
 
-The Stream Transcript feature provides a chronological record of stream events, including task transitions, GitHub commits, and manual notes. It allows streamers to maintain a complete audit trail of stream activities while providing viewers with context about what has happened throughout the session.
+The Stream Notes feature provides a chronological record of stream events, including task transitions, GitHub commits, manual notes, and LLM-generated paragraph summaries. It allows streamers to maintain a complete audit trail of stream activities while providing viewers with context about what has happened throughout the session.
 
 ## Features
 
 - **Task Tracking**: Automatic recording when tasks are started or completed
 - **Commit Integration**: Captures GitHub commits with links to the repository
-- **Manual Notes**: Ability to add arbitrary notes to the transcript
+- **Manual Notes**: Ability to add arbitrary notes to the stream
+- **LLM-Generated Paragraphs**: Longer narrative summaries of discussion periods
 - **Timestamped Entries**: All entries include precise timestamps
 - **Categorized Events**: Color-coded and icon-differentiated event types
 - **Sorted Display**: Most recent events shown first
-- **Tabbed Interface**: Separate tab for transcript view
+- **Multi-view Interface**: Different ways to view the stream content (Notes, Summary, Transcript)
 
 ## Data Schema
 
@@ -22,11 +23,16 @@ The Stream Transcript feature provides a chronological record of stream events, 
 interface TranscriptEntry {
   id: string;           // Unique identifier for the entry
   timestamp: string;    // ISO date string of when the event occurred
-  type: 'task_started' | 'task_completed' | 'commit' | 'note'; // Event type
+  type: 'task_started' | 'task_completed' | 'commit' | 'note' | 'paragraph'; // Event type
   content: string;      // Main text content of the entry
   taskName?: string;    // For task events: name of the task
   commitHash?: string;  // For commit events: Git commit hash
   commitUrl?: string;   // For commit events: URL to view the commit
+  title?: string;       // For paragraph entries: optional title
+  timeRange?: {         // For paragraph entries: time period covered
+    start: string;      // Start time (ISO string)
+    end: string;        // End time (ISO string)
+  };
 }
 ```
 
@@ -38,7 +44,7 @@ The transcript data is stored in the Redux state as part of the main stream stat
 interface StreamState {
   // Other state properties...
   transcript: TranscriptEntry[];
-  activeTab: 'main' | 'transcript';
+  activeTab: 'main' | 'notes' | 'summary' | 'raw';
 }
 ```
 
@@ -57,32 +63,64 @@ StreamInfoDisplay
 
 **File**: `src/components/TabsNavigation.tsx`
 
-- Provides UI for switching between main dashboard and transcript views
+- Provides UI for switching between different views (Dashboard, Notes, Summary, Full Text)
 - Uses `activeTab` from Redux state
 - Dispatches `changeTab` action to update the active tab
 
-### TranscriptPanel Component
+### TranscriptPanel Component (Notes View)
 
 **File**: `src/components/TranscriptPanel.tsx`
 
-- Main container for the transcript feature
-- Displays chronologically sorted transcript entries
+- Main container for the notes feature
+- Displays chronologically sorted entries of all types
 - Provides UI for adding manual notes (when logged in)
 - Shows appropriate icons and styling for different event types
+- Special formatting for LLM-generated paragraph entries
 - Handles formatting of timestamps and entry display
+
+### TranscriptSummaryPanel Component (Summary View)
+
+**File**: `src/components/TranscriptSummaryPanel.tsx`
+
+- Provides a structured summary of stream activities
+- Organizes entries by type (tasks, commits, notes)
+- Displays key statistics and overviews
+- Summarizes the stream into meaningful sections
+
+### RawTranscriptPanel Component (Transcript View)
+
+**File**: `src/components/RawTranscriptPanel.tsx`
+
+- Displays the raw transcript of the livestream conversation
+- Presents a continuous narrative of the stream
+- Converts events into human-readable paragraphs
+- Orders events chronologically (oldest first)
+- Focuses on readability and flow
 
 ## Redux Integration
 
 ### Actions
 
-1. **`changeTab`**: Changes the active tab (main or transcript)
+1. **`changeTab`**: Changes the active tab
    ```typescript
-   dispatch(changeTab('transcript'));
+   dispatch(changeTab('notes')); // Other options: 'main', 'summary', 'raw' (transcript)
    ```
 
-2. **`addTranscriptNote`**: Adds a manual note to the transcript
+2. **`addTranscriptNote`**: Adds a manual note
    ```typescript
    dispatch(addTranscriptNote('Started discussing authentication approaches'));
+   ```
+
+3. **`addTranscriptParagraph`**: Adds an LLM-generated paragraph summary
+   ```typescript
+   dispatch(addTranscriptParagraph({
+     content: 'Detailed discussion about authentication approaches...',
+     title: 'Authentication Discussion',
+     timeRange: {
+       start: startTime,
+       end: endTime
+     }
+   }));
    ```
 
 ### Automatic Event Recording
@@ -135,6 +173,7 @@ const generateTranscriptEntry = (
 | task_completed | Green (#16a34a) | CheckCircle |
 | commit | Purple (#9333ea) | GitCommit |
 | note | Gray (#6b7280) | Edit3 |
+| paragraph | Amber (#d97706) | FileText |
 
 ## Usage Examples
 

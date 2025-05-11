@@ -1,128 +1,197 @@
-import React, { useState } from 'react';
-import {
-  Clock,
-  Edit3,
-  GitCommit,
-  PlayCircle,
-  CheckCircle,
-  ExternalLink
-} from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { addTranscriptNote } from '../store/slices/streamSlice';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '../store';
+import { TranscriptEntry, fetchTranscript, addNote } from '../store/slices/streamSlice';
+import { useGetTranscriptQuery, useAddNoteMutation } from '../api/transcriptApi';
+import { 
+  selectTranscriptData, 
+  selectTranscriptLoading, 
+  selectTranscriptError 
+} from '../store/selectors';
 
 const TranscriptPanel: React.FC = () => {
-  const { transcript, isLoggedIn } = useAppSelector(state => state.stream);
-  const dispatch = useAppDispatch();
-  
+  const dispatch = useDispatch<AppDispatch>();
   const [newNote, setNewNote] = useState('');
   
-  const handleAddNote = () => {
+  // Use memoized selectors to prevent unnecessary re-renders
+  const transcript = useSelector(selectTranscriptData);
+  const loading = useSelector(selectTranscriptLoading);
+  const error = useSelector(selectTranscriptError);
+  
+  // RTK Query approach
+  const { data: transcriptData, isLoading: isLoadingQuery } = useGetTranscriptQuery(undefined, {
+    // Skip initial fetch since we'll use the thunk
+    skip: true
+  });
+  const [addNoteToTranscript, { isLoading: isAddingNote }] = useAddNoteMutation();
+
+  // Fetch transcript on component mount
+  useEffect(() => {
+    dispatch(fetchTranscript());
+  }, [dispatch]);
+
+  const handleAddNote = async () => {
     if (newNote.trim()) {
-      dispatch(addTranscriptNote(newNote.trim()));
-      setNewNote('');
+      // Option 1: Using RTK Query directly
+      try {
+        await addNoteToTranscript(newNote.trim()).unwrap();
+        setNewNote('');
+      } catch (err) {
+        console.error('Failed to add note:', err);
+      }
     }
   };
-  
-  // Format date for display
+
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  
-  // Get icon based on transcript entry type
-  const getEntryIcon = (type: string) => {
-    switch(type) {
-      case 'task_started':
-        return <PlayCircle size={16} className="text-blue-600" />;
-      case 'task_completed':
-        return <CheckCircle size={16} className="text-green-600" />;
-      case 'commit':
-        return <GitCommit size={16} className="text-purple-600" />;
-      case 'note':
-        return <Edit3 size={16} className="text-gray-600" />;
-      default:
-        return <Clock size={16} className="text-gray-600" />;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
+    } catch (e) {
+      return 'Invalid time';
     }
   };
-  
-  // Sort transcript by timestamp (most recent first)
-  const sortedTranscript = [...transcript].sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-  
-  return (
-    <div className="p-4 border-2 border-black">
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="uppercase tracking-wider font-bold">Stream Transcript</h2>
-        <div className="text-xs text-gray-600">{sortedTranscript.length} entries</div>
+
+  if (loading || isLoadingQuery) {
+    return <div className="p-4 bg-white rounded-lg shadow">Loading transcript...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
+        Error loading transcript: {error}
+        <button 
+          onClick={() => dispatch(fetchTranscript())} 
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Retry
+        </button>
       </div>
+    );
+  }
+
+  const renderEntryContent = (entry: TranscriptEntry) => {
+    switch (entry.type) {
+      case 'task_started':
+        return (
+          <div className="bg-blue-50 p-3 rounded border border-blue-200">
+            <div className="font-medium text-blue-700">▶ Started: {entry.taskName}</div>
+            <div>{entry.content}</div>
+          </div>
+        );
+        
+      case 'task_completed':
+        return (
+          <div className="bg-green-50 p-3 rounded border border-green-200">
+            <div className="font-medium text-green-700">✓ Completed: {entry.taskName}</div>
+            <div>{entry.content}</div>
+          </div>
+        );
+        
+      case 'commit':
+        return (
+          <div className="bg-purple-50 p-3 rounded border border-purple-200">
+            <div className="font-medium">
+              <span className="text-purple-700">📝 Commit:</span> 
+              {entry.commitUrl ? (
+                <a href={entry.commitUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline ml-1">
+                  {entry.commitHash?.substring(0, 7)}
+                </a>
+              ) : (
+                <span className="ml-1">{entry.commitHash?.substring(0, 7)}</span>
+              )}
+            </div>
+            <div>{entry.content}</div>
+          </div>
+        );
+        
+      case 'note':
+        return (
+          <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
+            <div className="font-medium text-yellow-700">📝 Note</div>
+            <div>{entry.content}</div>
+          </div>
+        );
+        
+      case 'paragraph':
+        return (
+          <div className="bg-gray-50 p-3 rounded border border-gray-200">
+            {entry.title && <div className="font-medium text-gray-700 mb-2">{entry.title}</div>}
+            <div className="whitespace-pre-line">{entry.content}</div>
+            {entry.timeRange && (
+              <div className="text-xs text-gray-500 mt-2">
+                {formatTime(entry.timeRange.start)} - {formatTime(entry.timeRange.end)}
+              </div>
+            )}
+          </div>
+        );
+        
+      case 'transcript':
+        return (
+          <div className="p-3 rounded border border-gray-200">
+            <div className="font-medium">{entry.speaker}</div>
+            <div>"{entry.content}"</div>
+            {entry.duration && (
+              <div className="text-xs text-gray-500">{entry.duration}s</div>
+            )}
+          </div>
+        );
+        
+      default:
+        return <div>{entry.content}</div>;
+    }
+  };
+
+  // Use a memoized version of the sorted transcript
+  const sortedTranscript = useMemo(() => {
+    if (!transcript || transcript.length === 0) return [];
+    return [...transcript].sort((a, b) => {
+      const dateA = new Date(a.timestamp).getTime();
+      const dateB = new Date(b.timestamp).getTime();
+      return dateB - dateA; // Sort in descending order (newest first)
+    });
+  }, [transcript]);
+
+  return (
+    <div className="p-4 bg-white rounded-lg shadow">
+      <h2 className="text-xl font-bold mb-4">Transcript & Notes</h2>
       
-      {/* Add note form (for logged in users) */}
-      {isLoggedIn && (
-        <div className="mb-6 flex">
+      {/* Add Note Form */}
+      <div className="mb-6">
+        <div className="flex">
           <input
             type="text"
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add note to transcript..."
-            className="flex-grow p-2 border-2 border-black rounded-none bg-white text-black"
+            className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Add a note..."
           />
           <button
             onClick={handleAddNote}
-            className="px-4 py-2 bg-black text-white rounded-none hover:bg-gray-800 transition-colors uppercase text-xs tracking-wider"
+            disabled={!newNote.trim() || isAddingNote}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r disabled:bg-gray-300"
           >
-            Add Note
+            {isAddingNote ? 'Adding...' : 'Add Note'}
           </button>
         </div>
-      )}
-      
-      {/* Transcript entries */}
-      <div className="space-y-4">
-        {sortedTranscript.map(entry => (
-          <div key={entry.id} className="border-l-4 pl-4 py-1" 
-               style={{ 
-                 borderLeftColor: 
-                   entry.type === 'task_started' ? '#2563eb' : 
-                   entry.type === 'task_completed' ? '#16a34a' : 
-                   entry.type === 'commit' ? '#9333ea' : '#6b7280'
-               }}>
-            <div className="flex items-center mb-1 text-xs text-gray-500">
-              <Clock size={12} className="mr-1" />
-              <span>{formatTime(entry.timestamp)}</span>
-              <div className="ml-3 flex items-center">
-                {getEntryIcon(entry.type)}
-                <span className="ml-1 uppercase tracking-wider">
-                  {entry.type.replace('_', ' ')}
-                </span>
-              </div>
-            </div>
-            
-            <div className="text-sm">{entry.content}</div>
-            
-            {/* Show commit info for commit entries */}
-            {entry.type === 'commit' && entry.commitHash && entry.commitUrl && (
-              <div className="mt-1">
-                <a
-                  href={entry.commitUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-mono text-blue-900 hover:underline flex items-center"
-                >
-                  {entry.commitHash}
-                  <ExternalLink size={10} className="ml-1" />
-                </a>
-              </div>
-            )}
-          </div>
-        ))}
       </div>
       
-      {/* Empty state */}
-      {sortedTranscript.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <div className="text-sm">No transcript entries yet</div>
-        </div>
-      )}
+      {/* Transcript Entries */}
+      <div className="space-y-4">
+        {!sortedTranscript || sortedTranscript.length === 0 ? (
+          <p className="text-gray-500 italic">No transcript entries yet</p>
+        ) : (
+          sortedTranscript.map((entry) => (
+            <div key={entry.id} className="flex">
+              <div className="w-20 flex-shrink-0 text-sm text-gray-500">
+                {formatTime(entry.timestamp)}
+              </div>
+              <div className="flex-grow">
+                {renderEntryContent(entry)}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

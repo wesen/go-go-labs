@@ -106,11 +106,12 @@ The `streamSlice.ts` file contains the primary state for the application, includ
 - Display branch and commit information
 - Link to repository and commits
 
-### Stream Transcript
+### Stream Content System
 
-- Record stream events automatically
-- Add manual notes
-- Track task transitions and GitHub commits
+- **Notes View**: Record events, tasks, commits, and manually added notes
+- **Summary View**: Organized overview with grouped content categories
+- **Transcript View**: Raw livestream transcript with speaker attribution
+- **LLM Integration**: Support for AI-generated paragraph summaries
 
 ## Authentication
 
@@ -119,4 +120,4 @@ The application includes a simulated authentication system that toggles between:
 - **Logged In**: Full editing capabilities (streamer view)
 - **Logged Out**: Read-only view (viewer view)
 
-See the separate [transcript-feature.md](./transcript-feature.md) document for detailed information about the Stream Transcript feature.
+See the separate [transcripts-and-notes.md](./transcripts-and-notes.md) document for detailed information about the stream content system.
