@@ -1,5 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface TranscriptEntry {
+  id: string;
+  timestamp: string;
+  type: 'task_started' | 'task_completed' | 'commit' | 'note';
+  content: string;
+  taskName?: string;
+  commitHash?: string;
+  commitUrl?: string;
+}
+
+type TabType = 'main' | 'transcript' | 'summary';
+
 interface GithubInfo {
   repoUrl: string;
   isConnected: boolean;
@@ -35,6 +47,8 @@ interface StreamState {
   isEditing: boolean;
   isLoggedIn: boolean;
   github: GithubInfo;
+  transcript: TranscriptEntry[];
+  activeTab: TabType;
 }
 
 const initialState: StreamState = {
@@ -74,8 +88,90 @@ const initialState: StreamState = {
       date: "",
       url: ""
     }
-  }
+  },
+  // Mock transcript data
+  transcript: [
+    {
+      id: '1',
+      timestamp: new Date(Date.now() - 45 * 60000).toISOString(), // 45 minutes ago
+      type: 'task_started',
+      content: 'Started working on project setup and initialization',
+      taskName: 'Project setup and initialization'
+    },
+    {
+      id: '2',
+      timestamp: new Date(Date.now() - 40 * 60000).toISOString(), // 40 minutes ago
+      type: 'note',
+      content: 'Created project structure using create-react-app with TypeScript template'
+    },
+    {
+      id: '3',
+      timestamp: new Date(Date.now() - 35 * 60000).toISOString(), // 35 minutes ago
+      type: 'commit',
+      content: 'Initial project setup with TypeScript configuration',
+      commitHash: 'a1b2c3d',
+      commitUrl: 'https://github.com/yourusername/component-library/commit/a1b2c3d'
+    },
+    {
+      id: '4',
+      timestamp: new Date(Date.now() - 30 * 60000).toISOString(), // 30 minutes ago
+      type: 'task_completed',
+      content: 'Completed project setup and initialization',
+      taskName: 'Project setup and initialization'
+    },
+    {
+      id: '5',
+      timestamp: new Date(Date.now() - 25 * 60000).toISOString(), // 25 minutes ago
+      type: 'task_started',
+      content: 'Started working on design system planning',
+      taskName: 'Design system planning'
+    },
+    {
+      id: '6',
+      timestamp: new Date(Date.now() - 20 * 60000).toISOString(), // 20 minutes ago
+      type: 'note',
+      content: 'Researching color palette and typography options for the design system'
+    },
+    {
+      id: '7',
+      timestamp: new Date(Date.now() - 15 * 60000).toISOString(), // 15 minutes ago
+      type: 'commit',
+      content: 'Add design system tokens and Tailwind configuration',
+      commitHash: 'e5f6g7h',
+      commitUrl: 'https://github.com/yourusername/component-library/commit/e5f6g7h'
+    },
+    {
+      id: '8',
+      timestamp: new Date(Date.now() - 10 * 60000).toISOString(), // 10 minutes ago
+      type: 'task_completed',
+      content: 'Completed design system planning',
+      taskName: 'Design system planning'
+    },
+    {
+      id: '9',
+      timestamp: new Date(Date.now() - 5 * 60000).toISOString(), // 5 minutes ago
+      type: 'task_started',
+      content: 'Started working on component architecture',
+      taskName: 'Setting up component architecture'
+    },
+    {
+      id: '10',
+      timestamp: new Date().toISOString(), // now
+      type: 'note',
+      content: 'Creating folder structure for components and defining TypeScript interfaces'
+    }
+  ],
+  activeTab: 'main'
 };
+
+// Helper function to generate a transcript entry
+const generateTranscriptEntry = (type: TranscriptEntry['type'], content: string, details?: Partial<TranscriptEntry>): TranscriptEntry => ({
+  id: Math.random().toString(36).substr(2, 9),
+  timestamp: new Date().toISOString(),
+  type,
+  content,
+  ...details
+});
 
 export const streamSlice = createSlice({
   name: 'stream',
@@ -113,15 +209,31 @@ export const streamSlice = createSlice({
     setNewActiveTopic: (state, action: PayloadAction<string>) => {
       if (state.activeStep) {
         state.completedSteps.push(state.activeStep);
+        // Add task completion to transcript
+        state.transcript.push(generateTranscriptEntry('task_completed', 
+          `Completed ${state.activeStep}`, { taskName: state.activeStep }));
       }
       state.activeStep = action.payload;
+      // Add task start to transcript
+      state.transcript.push(generateTranscriptEntry('task_started', 
+        `Started working on ${action.payload}`, { taskName: action.payload }));
     },
     completeCurrentStep: (state) => {
       if (state.activeStep) {
-        state.completedSteps.push(state.activeStep);
+        const completedTask = state.activeStep;
+        state.completedSteps.push(completedTask);
+        
+        // Add task completion to transcript
+        state.transcript.push(generateTranscriptEntry('task_completed', 
+          `Completed ${completedTask}`, { taskName: completedTask }));
+        
         if (state.upcomingSteps.length > 0) {
           state.activeStep = state.upcomingSteps[0];
           state.upcomingSteps.splice(0, 1);
+          
+          // Add new task start to transcript
+          state.transcript.push(generateTranscriptEntry('task_started', 
+            `Started working on ${state.activeStep}`, { taskName: state.activeStep }));
         } else {
           state.activeStep = "";
         }
@@ -131,10 +243,19 @@ export const streamSlice = createSlice({
       const { step, source } = action.payload;
       
       if (state.activeStep) {
-        state.completedSteps.push(state.activeStep);
+        const previousTask = state.activeStep;
+        state.completedSteps.push(previousTask);
+        
+        // Add task completion to transcript
+        state.transcript.push(generateTranscriptEntry('task_completed', 
+          `Completed ${previousTask}`, { taskName: previousTask }));
       }
       
       state.activeStep = step;
+      
+      // Add new task start to transcript
+      state.transcript.push(generateTranscriptEntry('task_started', 
+        `Started working on ${step}`, { taskName: step }));
       
       if (source === 'upcoming') {
         state.upcomingSteps = state.upcomingSteps.filter(s => s !== step);
@@ -163,6 +284,21 @@ export const streamSlice = createSlice({
       url: string;
     }>) => {
       state.github.latestCommit = action.payload;
+      
+      // Add commit to transcript
+      state.transcript.push(generateTranscriptEntry('commit', 
+        action.payload.message, {
+          commitHash: action.payload.hash,
+          commitUrl: action.payload.url
+        }));
+    },
+    
+    // Transcript related actions
+    changeTab: (state, action: PayloadAction<TabType>) => {
+      state.activeTab = action.payload;
+    },
+    addTranscriptNote: (state, action: PayloadAction<string>) => {
+      state.transcript.push(generateTranscriptEntry('note', action.payload));
     }
   }
 });
@@ -181,7 +317,10 @@ export const {
   setGithubConnectionStatus,
   setGithubError,
   updateGithubBranchInfo,
-  updateGithubCommitInfo
+  updateGithubCommitInfo,
+  // Transcript actions
+  changeTab,
+  addTranscriptNote
 } = streamSlice.actions;
 
 export default streamSlice.reducer;

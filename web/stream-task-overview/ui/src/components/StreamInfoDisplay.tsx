@@ -12,6 +12,8 @@ import {
   makeStepActive
 } from '../store/slices/streamSlice';
 import GithubInfoPanel from './GithubInfoPanel';
+import TabsNavigation from './TabsNavigation';
+import TranscriptPanel from './TranscriptPanel';
 
 interface StreamInfo {
   title: string;
@@ -31,7 +33,8 @@ const StreamInfoDisplay: React.FC = () => {
     activeStep,
     upcomingSteps,
     isEditing,
-    isLoggedIn
+    isLoggedIn,
+    activeTab
   } = useAppSelector(state => state.stream);
   const dispatch = useAppDispatch();
 
@@ -158,7 +161,11 @@ const StreamInfoDisplay: React.FC = () => {
         </div>
       </div>
       
-      {isEditing ? (
+      <TabsNavigation />
+      
+      {activeTab === 'transcript' ? (
+        <TranscriptPanel />
+      ) : isEditing ? (
         <div className="grid grid-cols-1 gap-4 p-4 border-2 border-black">
           <div>
             <label className="block text-sm font-medium mb-1 uppercase tracking-wider">Stream Title</label>
