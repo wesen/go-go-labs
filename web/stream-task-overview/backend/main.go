@@ -83,6 +83,11 @@ func main() {
 		}
 	})
 
+	// Initialize GitHub OAuth
+	log.Info().Msg("Initializing authentication")
+	InitAuth(e)
+	auth := NewAuthHandler()
+
 	// Setup store and handlers
 	log.Info().Msg("Initializing data store")
 	store := NewStreamStore()
@@ -90,15 +95,37 @@ func main() {
 	log.Info().Msg("Creating request handlers")
 	h := NewStreamHandler(store)
 
-	// Routes
+	// Setup GitHub poller
+	log.Info().Msg("Setting up GitHub poller")
+	poller := NewGithubPoller(store)
+	poller.Start()
+	defer poller.Stop()
+
+	// Auth routes
+	log.Info().Msg("Setting up authentication routes")
+	e.GET("/auth/github", auth.GithubAuthBegin)
+	e.GET("/auth/github/callback", auth.GithubAuthCallback)
+	e.GET("/auth/user", auth.GetCurrentUser)
+	e.GET("/auth/logout", auth.Logout)
+
+	// API routes
 	log.Info().Msg("Setting up API routes")
-	e.GET("/api/stream", h.GetStreamInfo)
-	e.PUT("/api/stream", h.UpdateStreamInfo)
-	e.GET("/api/stream/steps", h.GetSteps)
-	e.PUT("/api/stream/steps/active", h.SetActiveStep)
-	e.POST("/api/stream/steps/upcoming", h.AddUpcomingStep)
-	e.POST("/api/stream/steps/complete", h.CompleteActiveStep)
-	e.PUT("/api/stream/steps/reactivate", h.ReactivateStep)
+	api := e.Group("/api")
+
+	// Public routes
+	api.GET("/stream", h.GetStreamInfo)
+	api.GET("/stream/steps", h.GetSteps) 
+
+	// Protected routes
+	adminGroup := api.Group("", auth.RequireAuth, auth.AdminOnly)
+	adminGroup.PUT("/stream", h.UpdateStreamInfo)
+	adminGroup.PUT("/stream/steps/active", h.SetActiveStep)
+	adminGroup.POST("/stream/steps/upcoming", h.AddUpcomingStep)
+	adminGroup.POST("/stream/steps/complete", h.CompleteActiveStep)
+	adminGroup.PUT("/stream/steps/reactivate", h.ReactivateStep)
+
+	// Serve frontend files
+	e.Static("/", "../ui/dist")
 
 	// Setup graceful shutdown
 	go func() {
@@ -106,12 +133,17 @@ func main() {
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		s := <-sig
 		log.Info().Str("signal", s.String()).Msg("Shutting down server...")
+		poller.Stop()
 		e.Close()
 	}()
 
 	// Start server
-	log.Info().Str("address", ":8080").Msg("Starting server")
-	if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Info().Str("address", ":"+port).Msg("Starting server")
+	if err := e.Start(":"+port); err != nil && err != http.ErrServerClosed {
 		log.Fatal().Err(err).Msg("Server startup failed")
 	}
 }
