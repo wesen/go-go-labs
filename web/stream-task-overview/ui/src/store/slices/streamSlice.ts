@@ -1,5 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface GithubInfo {
+  repoUrl: string;
+  isConnected: boolean;
+  token: string;
+  repoOwner: string;
+  repoName: string;
+  currentBranch: string;
+  latestCommit: {
+    message: string;
+    author: string;
+    hash: string;
+    date: string;
+    url: string;
+  };
+  error?: string;
+}
+
 interface StreamInfo {
   title: string;
   description: string;
@@ -17,6 +34,7 @@ interface StreamState {
   upcomingSteps: string[];
   isEditing: boolean;
   isLoggedIn: boolean;
+  github: GithubInfo;
 }
 
 const initialState: StreamState = {
@@ -41,7 +59,22 @@ const initialState: StreamState = {
     "Add dark mode toggle"
   ],
   isEditing: false,
-  isLoggedIn: true
+  isLoggedIn: true,
+  github: {
+    repoUrl: "https://github.com/yourusername/component-library",
+    isConnected: false,
+    token: "",
+    repoOwner: "yourusername",
+    repoName: "component-library",
+    currentBranch: "main",
+    latestCommit: {
+      message: "",
+      author: "",
+      hash: "",
+      date: "",
+      url: ""
+    }
+  }
 };
 
 export const streamSlice = createSlice({
@@ -50,6 +83,16 @@ export const streamSlice = createSlice({
   reducers: {
     setStreamInfo: (state, action: PayloadAction<StreamInfo>) => {
       state.info = action.payload;
+      
+      // If GitHub repo URL changed, parse owner and repo name
+      if (action.payload.githubRepo !== state.info.githubRepo) {
+        const repoUrlMatch = action.payload.githubRepo.match(/github\.com[\/:]([\w-\.]+)\/([\w-\.]+)(\.git)?$/);
+        if (repoUrlMatch) {
+          state.github.repoUrl = action.payload.githubRepo;
+          state.github.repoOwner = repoUrlMatch[1];
+          state.github.repoName = repoUrlMatch[2];
+        }
+      }
     },
     toggleEditMode: (state) => {
       state.isEditing = !state.isEditing;
@@ -98,6 +141,28 @@ export const streamSlice = createSlice({
       } else if (source === 'completed') {
         state.completedSteps = state.completedSteps.filter(s => s !== step);
       }
+    },
+    // GitHub related actions
+    setGithubToken: (state, action: PayloadAction<string>) => {
+      state.github.token = action.payload;
+    },
+    setGithubConnectionStatus: (state, action: PayloadAction<boolean>) => {
+      state.github.isConnected = action.payload;
+    },
+    setGithubError: (state, action: PayloadAction<string>) => {
+      state.github.error = action.payload;
+    },
+    updateGithubBranchInfo: (state, action: PayloadAction<{branch: string}>) => {
+      state.github.currentBranch = action.payload.branch;
+    },
+    updateGithubCommitInfo: (state, action: PayloadAction<{
+      message: string;
+      author: string;
+      hash: string;
+      date: string;
+      url: string;
+    }>) => {
+      state.github.latestCommit = action.payload;
     }
   }
 });
@@ -110,7 +175,13 @@ export const {
   addUpcomingStep, 
   setNewActiveTopic, 
   completeCurrentStep, 
-  makeStepActive 
+  makeStepActive,
+  // GitHub actions
+  setGithubToken,
+  setGithubConnectionStatus,
+  setGithubError,
+  updateGithubBranchInfo,
+  updateGithubCommitInfo
 } = streamSlice.actions;
 
 export default streamSlice.reducer;

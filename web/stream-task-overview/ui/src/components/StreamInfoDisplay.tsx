@@ -11,6 +11,7 @@ import {
   completeCurrentStep,
   makeStepActive
 } from '../store/slices/streamSlice';
+import GithubInfoPanel from './GithubInfoPanel';
 
 interface StreamInfo {
   title: string;
@@ -255,6 +256,9 @@ const StreamInfoDisplay: React.FC = () => {
                 </a>
               </div>
             </div>
+            
+            {/* GitHub integration panel */}
+            <GithubInfoPanel />
             
             <div className="flex items-center">
               <div className="w-6 h-6 mr-2 flex items-center justify-center bg-black text-white">
