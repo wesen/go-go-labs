@@ -3,6 +3,18 @@ import { RootState } from './index';
 
 // Base selectors
 const selectStreamState = (state: RootState) => state.stream;
+const selectAuthState = (state: RootState) => state.auth;
+
+// Auth selectors
+export const selectIsAdmin = createSelector(
+  selectAuthState,
+  (authState) => authState.isAdmin
+);
+
+export const selectIsAuthenticated = createSelector(
+  selectAuthState,
+  (authState) => authState.isAuthenticated
+);
 
 // Memoized selectors for StreamInfoDisplay
 export const selectStreamInfo = createSelector(

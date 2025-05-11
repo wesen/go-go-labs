@@ -543,6 +543,13 @@ export const streamSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
+    // Add case reducer for resetting state
+    builder.addCase('STREAM_RESET_STATE', (state, action: PayloadAction<StreamState>) => {
+      // Ensure all parts of the state are reset. Object.assign can be shallow.
+      // A more robust way is to return the payload directly if it's the complete initial state.
+      return action.payload;
+    });
+
     // Stream info reducers
     builder.addCase(fetchStreamInfo.pending, (state) => {
       state.loading.streamInfo = true;

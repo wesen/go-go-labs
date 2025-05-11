@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
-import { useAuth } from '../hooks/useAuth';
 import { toggleEditMode, updateStreamInfo, fetchStreamInfo } from '../store/slices/streamSlice';
 import { useGetStreamInfoQuery, useUpdateStreamInfoMutation } from '../api/streamApi';
 import {
   selectStreamInfo,
   selectIsEditing,
   selectStreamInfoLoading,
-  selectStreamInfoError
+  selectStreamInfoError,
+  selectIsAdmin
 } from '../store/selectors';
 
 interface EditableFieldProps {
@@ -18,7 +18,7 @@ interface EditableFieldProps {
   editMode: boolean;
 }
 
-const EditableField: React.FC<EditableFieldProps> = ({ label, value, onChange, editMode }) => {
+export const EditableField: React.FC<EditableFieldProps> = ({ label, value, onChange, editMode }) => {
   return (
     <div className="mb-4">
       <div className="text-sm text-gray-500 mb-1">{label}</div>
@@ -38,7 +38,7 @@ const EditableField: React.FC<EditableFieldProps> = ({ label, value, onChange, e
 
 const StreamInfoDisplay: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAdmin } = useAuth();
+  const isAdmin = useSelector(selectIsAdmin);
   
   // Using RTK Query directly
   const { data: streamInfo, isLoading: isLoadingQuery, error: queryError } = useGetStreamInfoQuery();
