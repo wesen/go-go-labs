@@ -51,20 +51,51 @@ const TranscriptPanel: React.FC = () => {
     }
   };
 
-  if (loading || isLoadingQuery) {
-    return <div className="p-4 bg-white rounded-lg shadow">Loading transcript...</div>;
-  }
+  // Use a memoized version of the sorted transcript - moved up before conditionals
+  const sortedTranscript = useMemo(() => {
+    if (!transcript || transcript.length === 0) return [];
+    return [...transcript].sort((a, b) => {
+      const dateA = new Date(a.timestamp).getTime();
+      const dateB = new Date(b.timestamp).getTime();
+      return dateB - dateA; // Sort in descending order (newest first)
+    });
+  }, [transcript]);
+  
+  const renderContent = () => {
+    if (loading || isLoadingQuery) {
+      return <div className="p-4 bg-white rounded-lg shadow">Loading transcript...</div>;
+    }
 
-  if (error) {
+    if (error) {
+      return (
+        <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
+          Error loading transcript: {error}
+          <button 
+            onClick={() => dispatch(fetchTranscript())} 
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    
     return (
-      <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
-        Error loading transcript: {error}
-        <button 
-          onClick={() => dispatch(fetchTranscript())} 
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Retry
-        </button>
+      <div className="space-y-4">
+        {!sortedTranscript || sortedTranscript.length === 0 ? (
+          <p className="text-gray-500 italic">No transcript entries yet</p>
+        ) : (
+          sortedTranscript.map((entry) => (
+            <div key={entry.id} className="flex">
+              <div className="w-20 flex-shrink-0 text-sm text-gray-500">
+                {formatTime(entry.timestamp)}
+              </div>
+              <div className="flex-grow">
+                {renderEntryContent(entry)}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     );
   }
@@ -141,16 +172,6 @@ const TranscriptPanel: React.FC = () => {
     }
   };
 
-  // Use a memoized version of the sorted transcript
-  const sortedTranscript = useMemo(() => {
-    if (!transcript || transcript.length === 0) return [];
-    return [...transcript].sort((a, b) => {
-      const dateA = new Date(a.timestamp).getTime();
-      const dateB = new Date(b.timestamp).getTime();
-      return dateB - dateA; // Sort in descending order (newest first)
-    });
-  }, [transcript]);
-
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4">Transcript & Notes</h2>
@@ -176,22 +197,7 @@ const TranscriptPanel: React.FC = () => {
       </div>
       
       {/* Transcript Entries */}
-      <div className="space-y-4">
-        {!sortedTranscript || sortedTranscript.length === 0 ? (
-          <p className="text-gray-500 italic">No transcript entries yet</p>
-        ) : (
-          sortedTranscript.map((entry) => (
-            <div key={entry.id} className="flex">
-              <div className="w-20 flex-shrink-0 text-sm text-gray-500">
-                {formatTime(entry.timestamp)}
-              </div>
-              <div className="flex-grow">
-                {renderEntryContent(entry)}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {renderContent()}
     </div>
   );
 };

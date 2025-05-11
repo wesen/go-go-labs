@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
 	"sync"
 	"time"
 
@@ -143,15 +144,15 @@ func (s *StreamStore) initDefaultData() {
 
 	if count == 0 {
 		log.Info().Msg("No existing data found, creating default data")
-		
+
 		// Generate unique IDs
 		streamID := uuid.NewString()
 		stepsID := uuid.NewString()
-		
+
 		// Insert default stream info
 		log.Debug().Msg("Creating default stream info")
 		query := s.sql.Insert("stream_info").Columns(
-			"id", "title", "description", "start_time", 
+			"id", "title", "description", "start_time",
 			"language", "github_repo", "viewer_count",
 		).Values(
 			streamID,
@@ -176,7 +177,7 @@ func (s *StreamStore) initDefaultData() {
 
 		// Create default steps with unique IDs
 		log.Debug().Msg("Creating default steps")
-		
+
 		// Create completed steps with IDs
 		completedSteps := []Step{
 			{ID: uuid.NewString(), Description: "Project setup and initialization", CreatedAt: time.Now().Add(-2 * time.Hour)},
@@ -197,7 +198,7 @@ func (s *StreamStore) initDefaultData() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to marshal active step")
 		}
-		
+
 		// Create upcoming steps with IDs
 		upcomingSteps := []Step{
 			{ID: uuid.NewString(), Description: "Implement Button component", CreatedAt: time.Now()},
@@ -242,7 +243,7 @@ func (s *StreamStore) GetStreamInfo() StreamInfo {
 	defer s.mutex.RUnlock()
 
 	query := s.sql.Select(
-		"id", "title", "description", "start_time", 
+		"id", "title", "description", "start_time",
 		"language", "github_repo", "viewer_count",
 	).From("stream_info").Limit(1)
 
@@ -572,7 +573,10 @@ func (s *StreamStore) GetTranscriptEntries() ([]TranscriptEntry, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	query := s.sql.Select("*").From("transcript_entries").OrderBy("timestamp DESC")
+	// Use explicit column selection instead of * to avoid mapping issues with nested structs
+	query := s.sql.Select("id", "timestamp", "type", "content", "task_name",
+		"commit_hash", "commit_url", "time_range_start", "time_range_end",
+		"title", "speaker", "duration").From("transcript_entries").OrderBy("timestamp DESC")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -580,31 +584,99 @@ func (s *StreamStore) GetTranscriptEntries() ([]TranscriptEntry, error) {
 		return nil, errors.Wrap(err, "build SQL")
 	}
 
-	var entries []TranscriptEntry
-	err = s.db.Select(&entries, sql, args...)
+	// Query raw data first to avoid struct mapping issues
+	rows, err := s.db.Queryx(sql, args...)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get transcript entries from database")
 		return nil, errors.Wrap(err, "select from database")
 	}
+	defer rows.Close()
 
-	// Process TimeRange fields which are stored in separate columns
-	for i := range entries {
-		if entries[i].TimeRange == nil && 
-		   (entries[i].Type == TranscriptTypeParagraph || entries[i].Type == TranscriptTypeTranscript) {
-			// Check if we have time range values
-			var start, end time.Time
-			
-			// Get the time range start and end from rows
-			row := s.db.QueryRow("SELECT time_range_start, time_range_end FROM transcript_entries WHERE id = ?", entries[i].ID)
-			err := row.Scan(&start, &end)
-			
-			if err == nil && !start.IsZero() && !end.IsZero() {
-				entries[i].TimeRange = &TimeRange{
-					Start: start,
-					End:   end,
-				}
+	// Manually construct entries to handle TimeRange properly
+	var entries []TranscriptEntry
+	for rows.Next() {
+		var entry TranscriptEntry
+
+		// Create a map to scan into
+		result := make(map[string]interface{})
+		err := rows.MapScan(result)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to scan transcript entry row")
+			continue
+		}
+
+		// Set fields from the map
+		if v, ok := result["id"]; ok {
+			entry.ID = string(v.([]byte))
+		}
+		if v, ok := result["timestamp"]; ok {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				entry.Timestamp = ts
 			}
 		}
+		if v, ok := result["type"]; ok {
+			entry.Type = TranscriptEntryType(string(v.([]byte)))
+		}
+		if v, ok := result["content"]; ok {
+			entry.Content = string(v.([]byte))
+		}
+
+		// Handle optional fields
+		if v, ok := result["task_name"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.TaskName = &str
+		}
+		if v, ok := result["commit_hash"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.CommitHash = &str
+		}
+		if v, ok := result["commit_url"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.CommitURL = &str
+		}
+		if v, ok := result["title"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.Title = &str
+		}
+		if v, ok := result["speaker"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.Speaker = &str
+		}
+		if v, ok := result["duration"]; ok && v != nil {
+			if dur, err := strconv.Atoi(string(v.([]byte))); err == nil {
+				entry.Duration = &dur
+			}
+		}
+
+		// Handle TimeRange
+		var start, end time.Time
+		if v, ok := result["time_range_start"]; ok && v != nil {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				start = ts
+			}
+		}
+		if v, ok := result["time_range_end"]; ok && v != nil {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				end = ts
+			}
+		}
+
+		if !start.IsZero() && !end.IsZero() {
+			entry.TimeRange = &TimeRange{
+				Start: start,
+				End:   end,
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Error().Err(err).Msg("Error iterating transcript entry rows")
+		return nil, errors.Wrap(err, "iterate rows")
 	}
 
 	log.Debug().Int("count", len(entries)).Msg("Retrieved transcript entries")
@@ -617,7 +689,10 @@ func (s *StreamStore) GetTranscriptEntriesByType(entryType TranscriptEntryType) 
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	query := s.sql.Select("*").From("transcript_entries").Where(squirrel.Eq{"type": entryType}).OrderBy("timestamp DESC")
+	// Use explicit column selection instead of * to avoid mapping issues with nested structs
+	query := s.sql.Select("id", "timestamp", "type", "content", "task_name",
+		"commit_hash", "commit_url", "time_range_start", "time_range_end",
+		"title", "speaker", "duration").From("transcript_entries").Where(squirrel.Eq{"type": entryType}).OrderBy("timestamp DESC")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -625,31 +700,99 @@ func (s *StreamStore) GetTranscriptEntriesByType(entryType TranscriptEntryType) 
 		return nil, errors.Wrap(err, "build SQL")
 	}
 
-	var entries []TranscriptEntry
-	err = s.db.Select(&entries, sql, args...)
+	// Query raw data first to avoid struct mapping issues
+	rows, err := s.db.Queryx(sql, args...)
 	if err != nil {
 		log.Error().Err(err).Str("type", string(entryType)).Msg("Failed to get transcript entries by type from database")
 		return nil, errors.Wrap(err, "select from database")
 	}
+	defer rows.Close()
 
-	// Process TimeRange fields which are stored in separate columns
-	for i := range entries {
-		if entries[i].TimeRange == nil && 
-		   (entries[i].Type == TranscriptTypeParagraph || entries[i].Type == TranscriptTypeTranscript) {
-			// Check if we have time range values
-			var start, end time.Time
-			
-			// Get the time range start and end from rows
-			row := s.db.QueryRow("SELECT time_range_start, time_range_end FROM transcript_entries WHERE id = ?", entries[i].ID)
-			err := row.Scan(&start, &end)
-			
-			if err == nil && !start.IsZero() && !end.IsZero() {
-				entries[i].TimeRange = &TimeRange{
-					Start: start,
-					End:   end,
-				}
+	// Manually construct entries to handle TimeRange properly
+	var entries []TranscriptEntry
+	for rows.Next() {
+		var entry TranscriptEntry
+
+		// Create a map to scan into
+		result := make(map[string]interface{})
+		err := rows.MapScan(result)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to scan transcript entry row")
+			continue
+		}
+
+		// Set fields from the map
+		if v, ok := result["id"]; ok {
+			entry.ID = string(v.([]byte))
+		}
+		if v, ok := result["timestamp"]; ok {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				entry.Timestamp = ts
 			}
 		}
+		if v, ok := result["type"]; ok {
+			entry.Type = TranscriptEntryType(string(v.([]byte)))
+		}
+		if v, ok := result["content"]; ok {
+			entry.Content = string(v.([]byte))
+		}
+
+		// Handle optional fields
+		if v, ok := result["task_name"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.TaskName = &str
+		}
+		if v, ok := result["commit_hash"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.CommitHash = &str
+		}
+		if v, ok := result["commit_url"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.CommitURL = &str
+		}
+		if v, ok := result["title"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.Title = &str
+		}
+		if v, ok := result["speaker"]; ok && v != nil {
+			str := string(v.([]byte))
+			entry.Speaker = &str
+		}
+		if v, ok := result["duration"]; ok && v != nil {
+			if dur, err := strconv.Atoi(string(v.([]byte))); err == nil {
+				entry.Duration = &dur
+			}
+		}
+
+		// Handle TimeRange
+		var start, end time.Time
+		if v, ok := result["time_range_start"]; ok && v != nil {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				start = ts
+			}
+		}
+		if v, ok := result["time_range_end"]; ok && v != nil {
+			ts, err := time.Parse(time.RFC3339, string(v.([]byte)))
+			if err == nil {
+				end = ts
+			}
+		}
+
+		if !start.IsZero() && !end.IsZero() {
+			entry.TimeRange = &TimeRange{
+				Start: start,
+				End:   end,
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Error().Err(err).Msg("Error iterating transcript entry rows")
+		return nil, errors.Wrap(err, "iterate rows")
 	}
 
 	log.Debug().Str("type", string(entryType)).Int("count", len(entries)).Msg("Retrieved transcript entries by type")
@@ -774,10 +917,10 @@ func (s *StreamStore) ConnectGitHub(info GitHubInfo) error {
 		// Update existing connection
 		log.Debug().Msg("Updating existing GitHub connection")
 		query := s.sql.Update("github_integration").SetMap(map[string]interface{}{
-			"token":           info.Token,
-			"repo_owner":      info.RepoOwner,
-			"repo_name":       info.RepoName,
-			"current_branch":  info.CurrentBranch,
+			"token":          info.Token,
+			"repo_owner":     info.RepoOwner,
+			"repo_name":      info.RepoName,
+			"current_branch": info.CurrentBranch,
 		})
 
 		sql, args, err := query.ToSql()
