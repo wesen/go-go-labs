@@ -1,8 +1,9 @@
 import { http, HttpResponse } from 'msw';
+import { baseUrl } from '../api/baseApi'; // Import baseUrl
 
 export const handlers = [
   // Mock authentication status
-  http.get('/api/auth/status', () => {
+  http.get(`${baseUrl}/auth/status`, () => {
     return HttpResponse.json({ 
       isAuthenticated: true, 
       isAdmin: true 
@@ -10,7 +11,7 @@ export const handlers = [
   }),
 
   // Get user information
-  http.get('/api/auth/user', () => {
+  http.get(`${baseUrl}/auth/user`, () => {
     return HttpResponse.json({
       authenticated: true,
       id: 'user123',
@@ -23,7 +24,7 @@ export const handlers = [
   }),
   
   // Mock steps data
-  http.get('/api/stream/steps', () => {
+  http.get(`${baseUrl}/stream/steps`, () => {
     return HttpResponse.json({
       completedSteps: ['Research competitors', 'Create wireframes'],
       activeStep: 'Implement UI components',
@@ -39,7 +40,7 @@ export const handlers = [
   }),
   
   // Mock stream info endpoint for streamApi
-  http.get('/api/stream', () => {
+  http.get(`${baseUrl}/stream`, () => {
     return HttpResponse.json({
       title: 'Building a Task Management System',
       description: 'Creating a full-stack application with React and Go',
@@ -51,7 +52,7 @@ export const handlers = [
   }),
   
   // Mock update stream info for streamApi
-  http.put('/api/stream', async () => {
+  http.put(`${baseUrl}/stream`, async () => {
     return HttpResponse.json({
       title: 'Building a Task Management System',
       description: 'Creating a full-stack application with React and Go',
@@ -63,7 +64,7 @@ export const handlers = [
   }),
 
   // GitHub related endpoints
-  http.get('/api/github/info', () => {
+  http.get(`${baseUrl}/github/info`, () => {
     return HttpResponse.json({
       repoUrl: 'https://github.com/organization/repo-name',
       isConnected: true,
@@ -81,7 +82,7 @@ export const handlers = [
     });
   }),
 
-  http.get('/api/github/commits', () => {
+  http.get(`${baseUrl}/github/commits`, () => {
     return HttpResponse.json([
       {
         message: 'Initial commit',
@@ -94,7 +95,7 @@ export const handlers = [
   }),
   
   // Transcript endpoints
-  http.get('/api/stream/transcript', () => {
+  http.get(`${baseUrl}/stream/transcript`, () => {
     return HttpResponse.json([
       {
         type: 'system',
@@ -110,7 +111,7 @@ export const handlers = [
   }),
 
   // Mock login endpoint
-  http.post('/api/auth/login', async ({ request }) => {
+  http.post(`${baseUrl}/auth/login`, async ({ request }) => {
     const body = await request.json();
     if (body.username === 'admin' && body.password === 'password') {
       return HttpResponse.json({ 
@@ -126,7 +127,7 @@ export const handlers = [
   }),
 
   // Mock logout endpoint
-  http.post('/api/auth/logout', () => {
+  http.post(`${baseUrl}/auth/logout`, () => {
     return HttpResponse.json({ success: true });
   })
 ];

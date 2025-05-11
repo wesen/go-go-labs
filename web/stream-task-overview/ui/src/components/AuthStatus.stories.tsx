@@ -3,6 +3,7 @@ import AuthStatus from './AuthStatus';
 import { http, HttpResponse } from 'msw';
 import { store } from '../../.storybook/preview';
 import { initialState as authInitialState, resetAuthState } from '../store/slices/authSlice';
+import { baseUrl } from '../api/baseApi';
 
 const meta: Meta<typeof AuthStatus> = {
   title: 'Components/AuthStatus',
@@ -28,7 +29,7 @@ export const AuthenticatedAdmin: Story = {
   parameters: {
     msw: {
       handlers: [
-        http.get('/api/auth/status', () => {
+        http.get(`${baseUrl}/auth/status`, () => {
           return HttpResponse.json({ isAuthenticated: true, isAdmin: true });
         })
       ]
@@ -44,7 +45,7 @@ export const AuthenticatedUser: Story = {
   parameters: {
     msw: {
       handlers: [
-        http.get('/api/auth/status', () => {
+        http.get(`${baseUrl}/auth/status`, () => {
           return HttpResponse.json({ isAuthenticated: true, isAdmin: false });
         })
       ]
@@ -60,7 +61,7 @@ export const NotAuthenticated: Story = {
   parameters: {
     msw: {
       handlers: [
-        http.get('/api/auth/status', () => {
+        http.get(`${baseUrl}/auth/status`, () => {
           return HttpResponse.json({ isAuthenticated: false, isAdmin: false });
         })
       ]

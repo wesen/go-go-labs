@@ -79,7 +79,10 @@ export const Error: Story = {
   play: async () => {
     resetStore();
     store.dispatch(setCredentials({ token: 'mock-token-admin', isAdmin: true }));
-    const errorPayload: Error = new Error('Failed to load stream information (Storybook mock)');
+    const errorPayload = {
+      name: 'StorybookMockError',
+      message: 'Failed to load stream information (Storybook mock)',
+    };
     store.dispatch(fetchStreamInfo.rejected(errorPayload, "requestId", undefined, undefined));
   },
 };
