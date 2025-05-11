@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
+import { useAuth } from '../hooks/useAuth';
 import { TranscriptEntry, fetchTranscript, addNote } from '../store/slices/streamSlice';
 import { useGetTranscriptQuery, useAddNoteMutation } from '../api/transcriptApi';
 import { 
@@ -12,6 +13,7 @@ import {
 const TranscriptPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [newNote, setNewNote] = useState('');
+  const { isAdmin } = useAuth();
   
   // Use memoized selectors to prevent unnecessary re-renders
   const transcript = useSelector(selectTranscriptData);
@@ -176,25 +178,27 @@ const TranscriptPanel: React.FC = () => {
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4">Transcript & Notes</h2>
       
-      {/* Add Note Form */}
-      <div className="mb-6">
-        <div className="flex">
-          <input
-            type="text"
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Add a note..."
-          />
-          <button
-            onClick={handleAddNote}
-            disabled={!newNote.trim() || isAddingNote}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r disabled:bg-gray-300"
-          >
-            {isAddingNote ? 'Adding...' : 'Add Note'}
-          </button>
+      {/* Add Note Form - Only visible to admins */}
+      {isAdmin && (
+        <div className="mb-6">
+          <div className="flex">
+            <input
+              type="text"
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Add a note..."
+            />
+            <button
+              onClick={handleAddNote}
+              disabled={!newNote.trim() || isAddingNote}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r disabled:bg-gray-300"
+            >
+              {isAddingNote ? 'Adding...' : 'Add Note'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Transcript Entries */}
       {renderContent()}

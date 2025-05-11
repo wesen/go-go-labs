@@ -6,6 +6,7 @@ import StreamInfoDisplay from './components/StreamInfoDisplay';
 import TaskStepsPanel from './components/TaskStepsPanel';
 import TranscriptPanel from './components/TranscriptPanel';
 import GithubInfoPanel from './components/GithubInfoPanel';
+import AuthStatus from './components/AuthStatus';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const App: React.FC = () => {
@@ -52,7 +53,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-gray-800">Stream Task Overview</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Stream Task Overview</h1>
+          <ErrorBoundary>
+            <AuthStatus />
+          </ErrorBoundary>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">

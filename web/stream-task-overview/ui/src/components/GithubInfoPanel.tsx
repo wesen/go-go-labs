@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
+import { useAuth } from '../hooks/useAuth';
 import { fetchGithubInfo, connectToGithub } from '../store/slices/streamSlice';
 import { useGetGithubInfoQuery, useConnectGithubMutation } from '../api/githubApi';
 import {
@@ -13,6 +14,7 @@ const GithubInfoPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [token, setToken] = useState('');
   const [showToken, setShowToken] = useState(false);
+  const { isAdmin } = useAuth();
   
   // RTK Query approach
   const { data: githubData, isLoading: isLoadingQuery } = useGetGithubInfoQuery(undefined, {
@@ -100,7 +102,7 @@ const GithubInfoPanel: React.FC = () => {
       {github.isConnected ? (
         <div>
           <div className="bg-green-50 p-3 rounded border border-green-200 mb-4">
-            <span className="text-green-700 font-medium">u2713 Connected to GitHub</span>
+            <span className="text-green-700 font-medium">✓ Connected to GitHub</span>
           </div>
           
           <div className="space-y-2">
@@ -143,49 +145,55 @@ const GithubInfoPanel: React.FC = () => {
         <div>
           <div className="mb-4">
             <p className="text-gray-700 mb-2">
-              Connect to your GitHub repository to track commits and sync your progress.
+              {isAdmin ? 'Connect to your GitHub repository to track commits and sync your progress.' : 'GitHub integration is not connected.'}
             </p>
             
             <div className="mb-4">
               <div className="text-sm text-gray-500 mb-1">Repository URL</div>
               <div className="font-medium">{github.repoUrl}</div>
-              <div className="text-xs text-gray-500 mt-1">
-                Update this in the Stream Information section.
-              </div>
+              {isAdmin && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Update this in the Stream Information section.
+                </div>
+              )}
             </div>
             
-            <div className="mb-4">
-              <label className="text-sm text-gray-500 mb-1 block" htmlFor="github-token">
-                GitHub Personal Access Token
-              </label>
-              <div className="flex">
-                <input
-                  id="github-token"
-                  type={showToken ? "text" : "password"}
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your GitHub token"
-                />
+            {isAdmin && (
+              <>
+                <div className="mb-4">
+                  <label className="text-sm text-gray-500 mb-1 block" htmlFor="github-token">
+                    GitHub Personal Access Token
+                  </label>
+                  <div className="flex">
+                    <input
+                      id="github-token"
+                      type={showToken ? "text" : "password"}
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter your GitHub token"
+                    />
+                    <button
+                      onClick={() => setShowToken(!showToken)}
+                      className="bg-gray-200 px-3 border-t border-r border-b border-gray-300 rounded-r"
+                    >
+                      {showToken ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Token needs repo scope permissions.
+                  </div>
+                </div>
+                
                 <button
-                  onClick={() => setShowToken(!showToken)}
-                  className="bg-gray-200 px-3 border-t border-r border-b border-gray-300 rounded-r"
+                  onClick={handleConnect}
+                  disabled={!token.trim() || isConnecting}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-300"
                 >
-                  {showToken ? 'Hide' : 'Show'}
+                  {isConnecting ? 'Connecting...' : 'Connect to GitHub'}
                 </button>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Token needs repo scope permissions.
-              </div>
-            </div>
-            
-            <button
-              onClick={handleConnect}
-              disabled={!token.trim() || isConnecting}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-300"
-            >
-              {isConnecting ? 'Connecting...' : 'Connect to GitHub'}
-            </button>
+              </>
+            )}
           </div>
         </div>
       )}

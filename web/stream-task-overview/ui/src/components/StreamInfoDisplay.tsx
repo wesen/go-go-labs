@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
+import { useAuth } from '../hooks/useAuth';
 import { toggleEditMode, updateStreamInfo, fetchStreamInfo } from '../store/slices/streamSlice';
 import { useGetStreamInfoQuery, useUpdateStreamInfoMutation } from '../api/streamApi';
 import {
@@ -37,6 +38,7 @@ const EditableField: React.FC<EditableFieldProps> = ({ label, value, onChange, e
 
 const StreamInfoDisplay: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const { isAdmin } = useAuth();
   
   // Using RTK Query directly
   const { data: streamInfo, isLoading: isLoadingQuery, error: queryError } = useGetStreamInfoQuery();
@@ -93,13 +95,15 @@ const StreamInfoDisplay: React.FC = () => {
     <div className="p-4 bg-white rounded-lg shadow">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Stream Information</h2>
-        <button
-          onClick={isEditing ? handleSaveChanges : handleToggleEditMode}
-          className={`px-4 py-2 rounded ${isEditing ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
-          disabled={isUpdating}
-        >
-          {isUpdating ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit'}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={isEditing ? handleSaveChanges : handleToggleEditMode}
+            className={`px-4 py-2 rounded ${isEditing ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
+            disabled={isUpdating}
+          >
+            {isUpdating ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit'}
+          </button>
+        )}
       </div>
 
       <EditableField

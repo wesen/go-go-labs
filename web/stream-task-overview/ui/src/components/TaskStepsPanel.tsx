@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
+import { useAuth } from '../hooks/useAuth';
 import {
   fetchAllSteps,
   addNewUpcomingStep,
@@ -17,6 +18,7 @@ import {
 const TaskStepsPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [newStep, setNewStep] = useState('');
+  const { isAdmin } = useAuth();
   
   // Use memoized selectors to prevent unnecessary re-renders
   const { completedSteps, activeStep, upcomingSteps, stepIdMapping } = useSelector(selectStepsData);
@@ -96,12 +98,14 @@ const TaskStepsPanel: React.FC = () => {
               <li key={step} className="flex items-center">
                 <span className="mr-2 text-green-500">✓</span>
                 <span>{step}</span>
-                <button
-                  onClick={() => handleSetActive(step, 'completed')}
-                  className="ml-auto text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded"
-                >
-                  Reactivate
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleSetActive(step, 'completed')}
+                    className="ml-auto text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded"
+                  >
+                    Reactivate
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -114,12 +118,14 @@ const TaskStepsPanel: React.FC = () => {
         {activeStep ? (
           <div className="bg-blue-50 p-3 rounded border border-blue-200 flex justify-between items-center">
             <span className="font-medium">{activeStep}</span>
-            <button
-              onClick={handleCompleteCurrentStep}
-              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-            >
-              Complete
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleCompleteCurrentStep}
+                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+              >
+                Complete
+              </button>
+            )}
           </div>
         ) : (
           <p className="text-gray-500 italic">No active task</p>
@@ -137,38 +143,42 @@ const TaskStepsPanel: React.FC = () => {
               <li key={step} className="flex items-center">
                 <span className="mr-2 text-gray-400">○</span>
                 <span>{step}</span>
-                <button
-                  onClick={() => handleSetActive(step, 'upcoming')}
-                  className="ml-auto text-xs bg-blue-200 hover:bg-blue-300 px-2 py-1 rounded"
-                >
-                  Make Active
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleSetActive(step, 'upcoming')}
+                    className="ml-auto text-xs bg-blue-200 hover:bg-blue-300 px-2 py-1 rounded"
+                  >
+                    Make Active
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
       
-      {/* Add New Task */}
-      <div>
-        <h3 className="text-lg font-semibold mb-2 text-gray-700">Add New Task</h3>
-        <div className="flex">
-          <input
-            type="text"
-            value={newStep}
-            onChange={(e) => setNewStep(e.target.value)}
-            className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter new task..."
-          />
-          <button
-            onClick={handleAddUpcomingStep}
-            disabled={!newStep.trim()}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r disabled:bg-gray-300"
-          >
-            Add
-          </button>
+      {/* Add New Task - Only visible to admins */}
+      {isAdmin && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2 text-gray-700">Add New Task</h3>
+          <div className="flex">
+            <input
+              type="text"
+              value={newStep}
+              onChange={(e) => setNewStep(e.target.value)}
+              className="flex-grow p-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter new task..."
+            />
+            <button
+              onClick={handleAddUpcomingStep}
+              disabled={!newStep.trim()}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r disabled:bg-gray-300"
+            >
+              Add
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

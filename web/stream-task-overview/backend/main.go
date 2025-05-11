@@ -124,7 +124,7 @@ func main() {
 	api.GET("/github/info", githubHandler.GetGitHubInfo)
 	api.GET("/github/commits", githubHandler.GetGitHubCommits)
 
-	// Protected routes
+	// Protected routes - require admin authentication
 	adminGroup := api.Group("", auth.RequireAuth, auth.AdminOnly)
 	adminGroup.PUT("/stream", h.UpdateStreamInfo)
 	adminGroup.PUT("/stream/steps/active", h.SetActiveStep)
