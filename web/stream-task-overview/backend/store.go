@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -58,7 +59,7 @@ func (s *StreamStore) initSchema() {
 	log.Debug().Msg("Creating stream_info table if not exists")
 	_, err := s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS stream_info (
-		id INTEGER PRIMARY KEY CHECK (id = 1),
+		id TEXT PRIMARY KEY,
 		title TEXT NOT NULL,
 		description TEXT NOT NULL,
 		start_time DATETIME NOT NULL,
@@ -75,7 +76,7 @@ func (s *StreamStore) initSchema() {
 	log.Debug().Msg("Creating steps table if not exists")
 	_, err = s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS steps (
-		id INTEGER PRIMARY KEY CHECK (id = 1),
+		id TEXT PRIMARY KEY,
 		completed TEXT NOT NULL,
 		active TEXT NOT NULL,
 		upcoming TEXT NOT NULL
@@ -100,13 +101,18 @@ func (s *StreamStore) initDefaultData() {
 
 	if count == 0 {
 		log.Info().Msg("No existing data found, creating default data")
+		
+		// Generate unique IDs
+		streamID := uuid.NewString()
+		stepsID := uuid.NewString()
+		
 		// Insert default stream info
 		log.Debug().Msg("Creating default stream info")
 		query := s.sql.Insert("stream_info").Columns(
 			"id", "title", "description", "start_time", 
 			"language", "github_repo", "viewer_count",
 		).Values(
-			1,
+			streamID,
 			"Building a React Component Library",
 			"Creating reusable UI components with TailwindCSS",
 			time.Now(),
@@ -126,22 +132,38 @@ func (s *StreamStore) initDefaultData() {
 		}
 		log.Debug().Msg("Default stream info created successfully")
 
-		// Insert default steps
+		// Create default steps with unique IDs
 		log.Debug().Msg("Creating default steps")
-		completed, err := json.Marshal([]string{
-			"Project setup and initialization",
-			"Design system planning",
-		})
+		
+		// Create completed steps with IDs
+		completedSteps := []Step{
+			{ID: uuid.NewString(), Description: "Project setup and initialization", CreatedAt: time.Now().Add(-2 * time.Hour)},
+			{ID: uuid.NewString(), Description: "Design system planning", CreatedAt: time.Now().Add(-1 * time.Hour)},
+		}
+		completedJSON, err := json.Marshal(completedSteps)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to marshal completed steps")
 		}
 
-		upcoming, err := json.Marshal([]string{
-			"Implement Button component",
-			"Create Card component",
-			"Build Form elements",
-			"Add dark mode toggle",
-		})
+		// Create active step with ID
+		activeStep := Step{
+			ID:          uuid.NewString(),
+			Description: "Setting up component architecture",
+			CreatedAt:   time.Now(),
+		}
+		activeJSON, err := json.Marshal(activeStep)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to marshal active step")
+		}
+		
+		// Create upcoming steps with IDs
+		upcomingSteps := []Step{
+			{ID: uuid.NewString(), Description: "Implement Button component", CreatedAt: time.Now()},
+			{ID: uuid.NewString(), Description: "Create Card component", CreatedAt: time.Now()},
+			{ID: uuid.NewString(), Description: "Build Form elements", CreatedAt: time.Now()},
+			{ID: uuid.NewString(), Description: "Add dark mode toggle", CreatedAt: time.Now()},
+		}
+		upcomingJSON, err := json.Marshal(upcomingSteps)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to marshal upcoming steps")
 		}
@@ -149,10 +171,10 @@ func (s *StreamStore) initDefaultData() {
 		query = s.sql.Insert("steps").Columns(
 			"id", "completed", "active", "upcoming",
 		).Values(
-			1,
-			string(completed),
-			"Setting up component architecture",
-			string(upcoming),
+			stepsID,
+			string(completedJSON),
+			string(activeJSON),
+			string(upcomingJSON),
 		)
 
 		sql, args, err = query.ToSql()
@@ -178,9 +200,9 @@ func (s *StreamStore) GetStreamInfo() StreamInfo {
 	defer s.mutex.RUnlock()
 
 	query := s.sql.Select(
-		"title", "description", "start_time", 
+		"id", "title", "description", "start_time", 
 		"language", "github_repo", "viewer_count",
-	).From("stream_info").Where(squirrel.Eq{"id": 1})
+	).From("stream_info").Limit(1)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -235,7 +257,8 @@ func (s *StreamStore) GetSteps() StepInfo {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	query := s.sql.Select("completed", "active", "upcoming").From("steps").Where(squirrel.Eq{"id": 1})
+	// Get the first steps record (there should only be one)
+	query := s.sql.Select("id", "completed", "active", "upcoming").From("steps").Limit(1)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -244,6 +267,7 @@ func (s *StreamStore) GetSteps() StepInfo {
 	}
 
 	var row struct {
+		ID        string `db:"id"`
 		Completed string `db:"completed"`
 		Active    string `db:"active"`
 		Upcoming  string `db:"upcoming"`
@@ -257,20 +281,30 @@ func (s *StreamStore) GetSteps() StepInfo {
 
 	// Parse JSON arrays
 	var steps StepInfo
-	steps.Active = row.Active
+	steps.ID = row.ID
+
+	// Parse active step
+	var activeStep Step
+	err = json.Unmarshal([]byte(row.Active), &activeStep)
+	if err != nil {
+		log.Error().Err(err).Str("json", row.Active).Msg("Failed to unmarshal active step")
+		steps.Active = nil
+	} else {
+		steps.Active = &activeStep
+	}
 
 	// Parse completed steps
 	err = json.Unmarshal([]byte(row.Completed), &steps.Completed)
 	if err != nil {
 		log.Error().Err(err).Str("json", row.Completed).Msg("Failed to unmarshal completed steps")
-		steps.Completed = []string{}
+		steps.Completed = []Step{}
 	}
 
 	// Parse upcoming steps
 	err = json.Unmarshal([]byte(row.Upcoming), &steps.Upcoming)
 	if err != nil {
 		log.Error().Err(err).Str("json", row.Upcoming).Msg("Failed to unmarshal upcoming steps")
-		steps.Upcoming = []string{}
+		steps.Upcoming = []Step{}
 	}
 
 	log.Debug().Interface("steps", steps).Msg("Retrieved steps")
@@ -288,6 +322,19 @@ func (s *StreamStore) updateSteps(steps StepInfo) error {
 		return errors.Wrap(err, "marshal completed steps")
 	}
 
+	// Marshal active step to JSON
+	var activeJSON []byte
+	if steps.Active != nil {
+		activeJSON, err = json.Marshal(steps.Active)
+		if err != nil {
+			log.Error().Err(err).Interface("active", steps.Active).Msg("Failed to marshal active step")
+			return errors.Wrap(err, "marshal active step")
+		}
+	} else {
+		// Empty object if no active step
+		activeJSON = []byte("{}")
+	}
+
 	upcoming, err := json.Marshal(steps.Upcoming)
 	if err != nil {
 		log.Error().Err(err).Interface("upcoming", steps.Upcoming).Msg("Failed to marshal upcoming steps")
@@ -297,9 +344,9 @@ func (s *StreamStore) updateSteps(steps StepInfo) error {
 	// Update database
 	query := s.sql.Update("steps").SetMap(map[string]interface{}{
 		"completed": string(completed),
-		"active":    steps.Active,
+		"active":    string(activeJSON),
 		"upcoming":  string(upcoming),
-	}).Where(squirrel.Eq{"id": 1})
+	}).Where(squirrel.Eq{"id": steps.ID})
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -318,8 +365,8 @@ func (s *StreamStore) updateSteps(steps StepInfo) error {
 }
 
 // SetActiveStep sets a new active step
-func (s *StreamStore) SetActiveStep(step string) {
-	log.Debug().Str("step", step).Msg("Setting active step")
+func (s *StreamStore) SetActiveStep(stepText string) {
+	log.Debug().Str("step", stepText).Msg("Setting active step")
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -327,44 +374,58 @@ func (s *StreamStore) SetActiveStep(step string) {
 	steps := s.GetSteps()
 
 	// Add current active to completed if it exists
-	if steps.Active != "" {
-		log.Debug().Str("previous_active", steps.Active).Msg("Moving previous active step to completed")
-		steps.Completed = append(steps.Completed, steps.Active)
+	if steps.Active != nil {
+		log.Debug().Str("previous_active", steps.Active.Description).Msg("Moving previous active step to completed")
+		steps.Completed = append(steps.Completed, *steps.Active)
+	}
+
+	// Create new active step with unique ID
+	newStep := &Step{
+		ID:          uuid.NewString(),
+		Description: stepText,
+		CreatedAt:   time.Now(),
 	}
 
 	// Set new active step
-	steps.Active = step
+	steps.Active = newStep
 
 	// Update database
 	err := s.updateSteps(steps)
 	if err != nil {
-		log.Error().Err(err).Str("step", step).Msg("Failed to set active step")
+		log.Error().Err(err).Str("step", stepText).Msg("Failed to set active step")
 		return
 	}
 
-	log.Info().Str("step", step).Msg("Active step set successfully")
+	log.Info().Str("step", stepText).Msg("Active step set successfully")
 }
 
 // AddUpcomingStep adds a new upcoming step
-func (s *StreamStore) AddUpcomingStep(step string) {
-	log.Debug().Str("step", step).Msg("Adding upcoming step")
+func (s *StreamStore) AddUpcomingStep(stepText string) {
+	log.Debug().Str("step", stepText).Msg("Adding upcoming step")
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	// Get current steps
 	steps := s.GetSteps()
 
+	// Create new step with unique ID
+	newStep := Step{
+		ID:          uuid.NewString(),
+		Description: stepText,
+		CreatedAt:   time.Now(),
+	}
+
 	// Add new upcoming step
-	steps.Upcoming = append(steps.Upcoming, step)
+	steps.Upcoming = append(steps.Upcoming, newStep)
 
 	// Update database
 	err := s.updateSteps(steps)
 	if err != nil {
-		log.Error().Err(err).Str("step", step).Msg("Failed to add upcoming step")
+		log.Error().Err(err).Str("step", stepText).Msg("Failed to add upcoming step")
 		return
 	}
 
-	log.Info().Str("step", step).Msg("Upcoming step added successfully")
+	log.Info().Str("step", stepText).Msg("Upcoming step added successfully")
 }
 
 // CompleteActiveStep completes the current active step
@@ -377,19 +438,19 @@ func (s *StreamStore) CompleteActiveStep() {
 	steps := s.GetSteps()
 
 	// Process only if there's an active step
-	if steps.Active != "" {
+	if steps.Active != nil {
 		// Add to completed
-		log.Debug().Str("active", steps.Active).Msg("Moving active step to completed")
-		steps.Completed = append(steps.Completed, steps.Active)
+		log.Debug().Str("active", steps.Active.Description).Msg("Moving active step to completed")
+		steps.Completed = append(steps.Completed, *steps.Active)
 
 		// Set next step as active if available
 		if len(steps.Upcoming) > 0 {
-			log.Debug().Str("next_step", steps.Upcoming[0]).Msg("Setting next step as active")
-			steps.Active = steps.Upcoming[0]
+			log.Debug().Str("next_step", steps.Upcoming[0].Description).Msg("Setting next step as active")
+			steps.Active = &steps.Upcoming[0]
 			steps.Upcoming = steps.Upcoming[1:]
 		} else {
-			log.Debug().Msg("No upcoming steps, setting active to empty")
-			steps.Active = ""
+			log.Debug().Msg("No upcoming steps, setting active to nil")
+			steps.Active = nil
 		}
 
 		// Update database
@@ -406,8 +467,8 @@ func (s *StreamStore) CompleteActiveStep() {
 }
 
 // ReactivateStep moves a step from completed/upcoming to active
-func (s *StreamStore) ReactivateStep(step string, source string) {
-	log.Debug().Str("step", step).Str("source", source).Msg("Reactivating step")
+func (s *StreamStore) ReactivateStep(stepID string, source string) {
+	log.Debug().Str("stepID", stepID).Str("source", source).Msg("Reactivating step")
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -415,39 +476,50 @@ func (s *StreamStore) ReactivateStep(step string, source string) {
 	steps := s.GetSteps()
 
 	// Add current active to completed if it exists
-	if steps.Active != "" {
-		log.Debug().Str("previous_active", steps.Active).Msg("Moving previous active step to completed")
-		steps.Completed = append(steps.Completed, steps.Active)
+	if steps.Active != nil {
+		log.Debug().Str("previous_active", steps.Active.Description).Msg("Moving previous active step to completed")
+		steps.Completed = append(steps.Completed, *steps.Active)
 	}
 
-	// Set step as active
-	steps.Active = step
+	// Find and set step as active
+	var foundStep *Step
 
 	// Remove from source list
 	if source == "upcoming" {
 		for i, s := range steps.Upcoming {
-			if s == step {
-				log.Debug().Int("index", i).Msg("Removing step from upcoming list")
+			if s.ID == stepID {
+				log.Debug().Int("index", i).Str("description", s.Description).Msg("Removing step from upcoming list")
+				foundStep = &s
 				steps.Upcoming = append(steps.Upcoming[:i], steps.Upcoming[i+1:]...)
 				break
 			}
 		}
 	} else if source == "completed" {
 		for i, s := range steps.Completed {
-			if s == step {
-				log.Debug().Int("index", i).Msg("Removing step from completed list")
+			if s.ID == stepID {
+				log.Debug().Int("index", i).Str("description", s.Description).Msg("Removing step from completed list")
+				foundStep = &s
 				steps.Completed = append(steps.Completed[:i], steps.Completed[i+1:]...)
 				break
 			}
 		}
 	}
 
-	// Update database
-	err := s.updateSteps(steps)
-	if err != nil {
-		log.Error().Err(err).Str("step", step).Str("source", source).Msg("Failed to reactivate step")
+	// Set step as active if found
+	if foundStep != nil {
+		steps.Active = foundStep
+		log.Debug().Str("description", foundStep.Description).Msg("Setting as active step")
+	} else {
+		log.Warn().Str("stepID", stepID).Msg("Step not found in source list")
 		return
 	}
 
-	log.Info().Str("step", step).Str("source", source).Msg("Step reactivated successfully")
+	// Update database
+	err := s.updateSteps(steps)
+	if err != nil {
+		log.Error().Err(err).Str("stepID", stepID).Str("source", source).Msg("Failed to reactivate step")
+		return
+	}
+
+	log.Info().Str("stepID", stepID).Str("description", steps.Active.Description).Str("source", source).Msg("Step reactivated successfully")
 }

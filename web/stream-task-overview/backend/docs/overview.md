@@ -52,8 +52,10 @@ Implements HTTP request handlers for the REST API endpoints.
 
 The application uses SQLite with two main tables:
 
-1. **stream_info**: Stores a single record with stream metadata
-2. **steps**: Stores a single record with steps data (arrays are stored as JSON strings)
+1. **stream_info**: Stores a single record with stream metadata (primary key is UUID string)
+2. **steps**: Stores a single record with steps data (primary key is UUID string, arrays are stored as JSON strings)
+
+Each step has a unique ID for proper identification and tracking across the system.
 
 ## Configuration
 

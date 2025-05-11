@@ -20,6 +20,7 @@ Represents metadata about the stream.
 
 ```json
 {
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "title": "Building a React Component Library",
   "description": "Creating reusable UI components with TailwindCSS",
   "startTime": "2025-05-11T14:30:45Z",
@@ -29,15 +30,54 @@ Represents metadata about the stream.
 }
 ```
 
+### Step
+
+Represents a single task step.
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "description": "Project setup and initialization",
+  "createdAt": "2025-05-11T14:20:45Z"
+}
+```
+
 ### StepInfo
 
 Represents the task steps for the stream.
 
 ```json
 {
-  "completed": ["Project setup and initialization", "Design system planning"],
-  "active": "Setting up component architecture",
-  "upcoming": ["Implement Button component", "Create Card component"]
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "completed": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "description": "Project setup and initialization",
+      "createdAt": "2025-05-11T13:30:45Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "description": "Design system planning",
+      "createdAt": "2025-05-11T14:00:45Z"
+    }
+  ],
+  "active": {
+    "id": "550e8400-e29b-41d4-a716-446655440005",
+    "description": "Setting up component architecture",
+    "createdAt": "2025-05-11T14:30:45Z"
+  },
+  "upcoming": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440006",
+      "description": "Implement Button component",
+      "createdAt": "2025-05-11T14:31:45Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440007",
+      "description": "Create Card component",
+      "createdAt": "2025-05-11T14:32:45Z"
+    }
+  ]
 }
 ```
 
@@ -173,7 +213,7 @@ Moves a step from either completed or upcoming lists to active.
 - **Request Body**: 
   ```json
   {
-    "step": "Step to reactivate",
+    "stepId": "550e8400-e29b-41d4-a716-446655440004",
     "source": "completed or upcoming"
   }
   ```
@@ -183,7 +223,7 @@ Moves a step from either completed or upcoming lists to active.
 
 ```json
 {
-  "step": "Design system planning",
+  "stepId": "550e8400-e29b-41d4-a716-446655440004",
   "source": "completed"
 }
 ```

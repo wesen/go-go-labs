@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -70,6 +71,11 @@ func (h *StreamHandler) SetActiveStep(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
 	}
 	
+	if strings.TrimSpace(data.Step) == "" {
+		log.Error().Msg("Empty step description received")
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Step description cannot be empty"})
+	}
+	
 	log.Debug().Str("step", data.Step).Msg("Setting active step")
 	h.store.SetActiveStep(data.Step)
 	
@@ -90,6 +96,11 @@ func (h *StreamHandler) AddUpcomingStep(c echo.Context) error {
 	if err := c.Bind(&data); err != nil {
 		log.Error().Err(err).Msg("Failed to parse AddUpcomingStep request")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
+	}
+	
+	if strings.TrimSpace(data.Step) == "" {
+		log.Error().Msg("Empty step description received")
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Step description cannot be empty"})
 	}
 	
 	log.Debug().Str("step", data.Step).Msg("Adding upcoming step")
@@ -119,7 +130,7 @@ func (h *StreamHandler) ReactivateStep(c echo.Context) error {
 	log.Debug().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Msg("Handling ReactivateStep request")
 	
 	var data struct {
-		Step   string `json:"step"`
+		StepID string `json:"stepId"`
 		Source string `json:"source"` // "completed" or "upcoming"
 	}
 	
@@ -128,8 +139,18 @@ func (h *StreamHandler) ReactivateStep(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
 	}
 	
-	log.Debug().Str("step", data.Step).Str("source", data.Source).Msg("Reactivating step")
-	h.store.ReactivateStep(data.Step, data.Source)
+	if data.StepID == "" {
+		log.Error().Msg("Empty step ID received")
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Step ID cannot be empty"})
+	}
+	
+	if data.Source != "completed" && data.Source != "upcoming" {
+		log.Error().Str("source", data.Source).Msg("Invalid source value")
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Source must be 'completed' or 'upcoming'"})
+	}
+	
+	log.Debug().Str("stepId", data.StepID).Str("source", data.Source).Msg("Reactivating step")
+	h.store.ReactivateStep(data.StepID, data.Source)
 	
 	updatedSteps := h.store.GetSteps()
 	log.Debug().Interface("steps", updatedSteps).Msg("Returning updated steps")
