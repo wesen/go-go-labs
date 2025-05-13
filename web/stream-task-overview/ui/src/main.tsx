@@ -5,11 +5,11 @@ import { store } from './store';
 import App from './App';
 import './index.css';
 
-// Initialize MSW for development
+// Bootstrap the application
 async function bootstrap() {
-  // Enable MSW in development and Storybook
-  if (import.meta.env.DEV || import.meta.env.STORYBOOK === 'true') {
-    console.log('[App] Initializing MSW in development mode');
+  // Only enable MSW in Storybook, not in regular development
+  if (import.meta.env.STORYBOOK === 'true') {
+    console.log('[App] Initializing MSW in Storybook mode');
     const { initMocks } = await import('./mocks/init');
     await initMocks();
   }

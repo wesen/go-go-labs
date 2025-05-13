@@ -26,16 +26,15 @@ export const handlers = [
   // Mock steps data
   http.get(`${baseUrl}/stream/steps`, () => {
     return HttpResponse.json({
-      completedSteps: ['Research competitors', 'Create wireframes'],
-      activeStep: 'Implement UI components',
-      upcomingSteps: ['Write unit tests', 'Deploy to staging'],
-      stepIdMapping: {
-        'Research competitors': '1',
-        'Create wireframes': '2',
-        'Implement UI components': '3',
-        'Write unit tests': '4',
-        'Deploy to staging': '5'
-      }
+      completed: [
+        { id: '1', description: 'Research competitors', createdAt: '2023-05-01T10:00:00.000Z' },
+        { id: '2', description: 'Create wireframes', createdAt: '2023-05-01T11:00:00.000Z' }
+      ],
+      active: { id: '3', description: 'Implement UI components', createdAt: '2023-05-01T12:00:00.000Z' },
+      upcoming: [
+        { id: '4', description: 'Write unit tests', createdAt: '2023-05-01T13:00:00.000Z' },
+        { id: '5', description: 'Deploy to staging', createdAt: '2023-05-01T14:00:00.000Z' }
+      ]
     });
   }),
   

@@ -105,7 +105,7 @@ const meta: Meta<typeof MyComponent> = {
   parameters: {
     layout: 'centered', // Or other layout as needed
   },
-  tags: ['autodocs'], // Enables automatic documentation generation
+  tags: [], // Enables automatic documentation generation
 };
 
 export default meta;
@@ -331,7 +331,7 @@ import { baseUrl } from '../api/baseApi';
 const meta: Meta<typeof StreamInfoDisplay> = {
   title: 'Components/StreamInfoDisplay',
   component: StreamInfoDisplay,
-  tags: ['autodocs'],
+  tags: [],
 };
 export default meta;
 type Story = StoryObj<typeof StreamInfoDisplay>;

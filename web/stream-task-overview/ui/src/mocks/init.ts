@@ -1,10 +1,10 @@
-// Initialize MSW
+// Initialize MSW for Storybook only
 async function initMocks() {
-  // Check if we should enable mocking
-  const shouldMock = import.meta.env.DEV || import.meta.env.STORYBOOK;
+  // Only used in Storybook environment
+  const isStorybook = import.meta.env.STORYBOOK === 'true';
   
-  if (shouldMock) {
-    console.log('[MSW] Initializing mock service worker');
+  if (isStorybook) {
+    console.log('[MSW] Initializing mock service worker for Storybook');
     
     if (typeof window === 'undefined') {
       // Server-side mocking (if needed)

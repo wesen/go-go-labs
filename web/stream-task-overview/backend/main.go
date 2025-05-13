@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +15,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Command-line flags
+var (
+	debugFlag = flag.Bool("debug", false, "Enable debug logging")
+)
+
 // Initialize logger
 func initLogger() {
 	// Pretty console logging for development
@@ -22,13 +28,19 @@ func initLogger() {
 
 	// Set global logger
 	log.Logger = zerolog.New(multi).With().Timestamp().Caller().Logger()
-	
-	// Set log level
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	// Enable debug level in development
-	if os.Getenv("ENV") == "development" {
+	// Set log level based on flags and environment
+	if *debugFlag {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("Debug logging enabled via command line flag")
+	} else if os.Getenv("DEBUG") == "true" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("Debug logging enabled via DEBUG environment variable")
+	} else if os.Getenv("ENV") == "development" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("Debug logging enabled via development environment")
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	log.Info().Msg("Logger initialized")
@@ -49,6 +61,9 @@ func (zl ZerologAdapter) Output() io.Writer {
 }
 
 func main() {
+	// Parse command line flags
+	flag.Parse()
+
 	// Initialize logger
 	initLogger()
 
@@ -61,7 +76,7 @@ func main() {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	
+
 	// Custom logger middleware
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -69,15 +84,33 @@ func main() {
 			res := c.Response()
 			start := time.Now()
 
-			log.Debug().Str("method", req.Method).Str("path", req.URL.Path).Str("id", c.Response().Header().Get(echo.HeaderXRequestID)).Msg("Request")
+			reqID := c.Response().Header().Get(echo.HeaderXRequestID)
+			log.Debug().
+				Str("method", req.Method).
+				Str("path", req.URL.Path).
+				Str("id", reqID).
+				Str("user_agent", req.UserAgent()).
+				Str("remote_addr", req.RemoteAddr).
+				Msg("Request received")
 
 			err := next(c)
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("id", reqID).
+					Str("path", req.URL.Path).
+					Msg("Request error")
 				c.Error(err)
 			}
 
 			latency := time.Since(start)
-			log.Info().Str("method", req.Method).Str("path", req.URL.Path).Int("status", res.Status).Dur("latency", latency).Msg("Response")
+			log.Info().
+				Str("method", req.Method).
+				Str("path", req.URL.Path).
+				Int("status", res.Status).
+				Dur("latency", latency).
+				Str("id", reqID).
+				Msg("Response")
 
 			return err
 		}
@@ -118,7 +151,7 @@ func main() {
 
 	// Public routes
 	api.GET("/stream", h.GetStreamInfo)
-	api.GET("/stream/steps", h.GetSteps) 
+	api.GET("/stream/steps", h.GetSteps)
 	api.GET("/stream/transcript", h.GetTranscript)
 	api.GET("/stream/transcript/types/:type", h.GetTranscriptByType)
 	api.GET("/github/info", githubHandler.GetGitHubInfo)
@@ -154,7 +187,7 @@ func main() {
 		port = "8080"
 	}
 	log.Info().Str("address", ":"+port).Msg("Starting server")
-	if err := e.Start(":"+port); err != nil && err != http.ErrServerClosed {
+	if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
 		log.Fatal().Err(err).Msg("Server startup failed")
 	}
 }

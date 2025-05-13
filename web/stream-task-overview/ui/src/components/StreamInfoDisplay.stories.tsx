@@ -11,7 +11,7 @@ const meta: Meta<typeof StreamInfoDisplay> = {
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs'],
+  tags: [],
 };
 
 export default meta;

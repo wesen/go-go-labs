@@ -14,7 +14,7 @@ const meta: Meta<typeof TranscriptPanel> = {
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs'],
+  tags: [],
 };
 
 export default meta;

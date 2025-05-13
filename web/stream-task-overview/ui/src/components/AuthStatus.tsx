@@ -43,10 +43,10 @@ const AuthStatus: React.FC = () => {
         <div className="flex flex-col items-center">
           <p className="text-sm mb-2">Not logged in</p>
           <a 
-            href="/auth/login" 
+            href="/auth/github" 
             className="px-3 py-1 bg-black text-white text-xs uppercase tracking-wider inline-flex items-center"
           >
-            <User size={12} className="mr-1" /> Login
+            <User size={12} className="mr-1" /> Login with GitHub
           </a>
         </div>
       )}

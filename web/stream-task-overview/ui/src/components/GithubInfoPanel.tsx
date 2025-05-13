@@ -30,50 +30,50 @@ const GithubInfoPanel: React.FC = () => {
 
   // Fetch GitHub info on component mount
   useEffect(() => {
-    if (github.isConnected) {
+    if (github && github.isConnected) {
       dispatch(fetchGithubInfo());
     }
-  }, [dispatch, github.isConnected]);
+  }, [dispatch, github]);
 
   const handleConnect = async () => {
-    if (token.trim()) {
-      // Parse the repo URL to get owner and repo name
-      const repoUrlMatch = github.repoUrl.match(/github\.com[\/:]([\w-\.]+)\/([\w-\.]+)(?:\.git)?$/);
+    if (!github || !token.trim()) return;
+    
+    // Parse the repo URL to get owner and repo name
+    const repoUrlMatch = github.repoUrl.match(/github\.com[\/:]([\w-\.]+)\/([\w-\.]+)(?:\.git)?$/);
+    
+    if (repoUrlMatch) {
+      const repoOwner = repoUrlMatch[1];
+      const repoName = repoUrlMatch[2];
       
-      if (repoUrlMatch) {
-        const repoOwner = repoUrlMatch[1];
-        const repoName = repoUrlMatch[2];
+      // Option 1: Using RTK Query directly
+      try {
+        await connectToGithubRepo({
+          token: token.trim(),
+          repoOwner,
+          repoName
+        }).unwrap();
+        setToken('');
         
-        // Option 1: Using RTK Query directly
-        try {
-          await connectToGithubRepo({
-            token: token.trim(),
-            repoOwner,
-            repoName
-          }).unwrap();
-          setToken('');
-          
-          // Fetch updated GitHub info
-          dispatch(fetchGithubInfo());
-        } catch (err) {
-          console.error('Failed to connect to GitHub:', err);
-        }
-        
-        // Option 2: Using Redux thunk
-        // dispatch(connectToGithub({
-        //   token: token.trim(),
-        //   repoOwner,
-        //   repoName
-        // }))
-        //   .unwrap()
-        //   .then(() => {
-        //     setToken('');
-        //     dispatch(fetchGithubInfo());
-        //   })
-        //   .catch(err => console.error('Failed to connect to GitHub:', err));
-      } else {
-        console.error('Invalid GitHub repository URL');
+        // Fetch updated GitHub info
+        dispatch(fetchGithubInfo());
+      } catch (err) {
+        console.error('Failed to connect to GitHub:', err);
       }
+      
+      // Option 2: Using Redux thunk
+      // dispatch(connectToGithub({
+      //   token: token.trim(),
+      //   repoOwner,
+      //   repoName
+      // }))
+      //   .unwrap()
+      //   .then(() => {
+      //     setToken('');
+      //     dispatch(fetchGithubInfo());
+      //   })
+      //   .catch(err => console.error('Failed to connect to GitHub:', err));
+    } else {
+      console.error('Invalid GitHub repository URL');
     }
   };
 
@@ -81,7 +81,7 @@ const GithubInfoPanel: React.FC = () => {
     return <div className="p-4 bg-white rounded-lg shadow">Loading GitHub information...</div>;
   }
 
-  if (error && github.isConnected) {
+  if (error && github && github.isConnected) {
     return (
       <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
         Error loading GitHub information: {error}
@@ -91,6 +91,14 @@ const GithubInfoPanel: React.FC = () => {
         >
           Retry
         </button>
+      </div>
+    );
+  }
+
+  if (!github) {
+    return (
+      <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
+        Error: GitHub information is missing or not properly initialized.
       </div>
     );
   }

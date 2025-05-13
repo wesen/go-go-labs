@@ -4,7 +4,7 @@ import { EditableField } from './StreamInfoDisplay'; // This component may need 
 const meta: Meta<typeof EditableField> = {
   title: 'Components/EditableField',
   component: EditableField,
-  tags: ['autodocs'],
+  tags: [],
   argTypes: {
     label: { control: 'text' },
     value: { control: 'text' },

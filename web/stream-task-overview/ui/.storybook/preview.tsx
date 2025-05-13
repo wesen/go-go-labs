@@ -1,4 +1,4 @@
-import type { Preview } from "@storybook/react";
+import type { Preview, StoryContext, StoryFn } from "@storybook/react";
 import { initialize, mswLoader } from 'msw-storybook-addon';
 import '../src/index.css'; // Make sure Tailwind styles are available
 import { handlers } from '../src/mocks/handlers';
@@ -10,10 +10,13 @@ import { makeStore } from './store';
 // It's separate from our app's MSW setup
 initialize({
   onUnhandledRequest: 'bypass',
+  serviceWorker: {
+    url: './mockServiceWorker.js',
+  }
 });
 
 // Create a decorator that creates a fresh Redux store for each story
-const withRedux = (Story, ctx) => {
+const withRedux = (Story: StoryFn, ctx: StoryContext) => {
   // Use the preloadedState from parameters.redux if available
   const store = useMemo(
     () => makeStore(ctx.parameters?.redux?.preloadedState),
@@ -30,6 +33,10 @@ const withRedux = (Story, ctx) => {
 const preview: Preview = {
   parameters: {
     actions: { argTypesRegex: "^on[A-Z].*" },
+    docs: {
+      // inlineStories: false,
+      autodocs: false
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,
@@ -43,5 +50,7 @@ const preview: Preview = {
   loaders: [mswLoader],
   decorators: [withRedux],
 };
+
+console.log('preview');
 
 export default preview;

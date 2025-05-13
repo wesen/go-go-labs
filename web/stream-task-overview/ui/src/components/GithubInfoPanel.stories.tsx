@@ -11,7 +11,7 @@ const meta: Meta<typeof GithubInfoPanel> = {
   parameters: {
     layout: 'centered',
   },
-  tags: ['autodocs'],
+  tags: [],
 };
 
 export default meta;
@@ -157,5 +157,23 @@ export const Error: Story = {
         })
       ],
     },
+  },
+};
+
+// Add a story for missing GitHub state
+export const MissingGithubState: Story = {
+  parameters: {
+    redux: {
+      preloadedState: {
+        auth: { ...authInitialState, isAuthenticated: true, isAdmin: false, token: 'mock-token' },
+        stream: {
+          ...streamInitialState,
+          // Deliberately omitting the github property
+          github: undefined,
+          loading: { ...streamInitialState.loading, github: false },
+          error: { ...streamInitialState.error, github: null }
+        }
+      }
+    }
   },
 };

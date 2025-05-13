@@ -10,7 +10,7 @@ const meta: Meta<typeof TabsNavigation> = {
   parameters: {
     layout: 'fullscreen',
   },
-  tags: ['autodocs'],
+  tags: [],
 };
 
 export default meta;
