@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Define a struct with time.Time and *time.Time fields

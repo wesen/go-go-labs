@@ -2,12 +2,13 @@ package cmds
 
 import (
 	"fmt"
-	"github.com/go-go-golems/go-go-labs/cmd/apps/textractor/pkg"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/go-go-golems/go-go-labs/cmd/apps/textractor/pkg"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"

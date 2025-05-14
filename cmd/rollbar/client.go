@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"io"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 type RollbarResponse struct {

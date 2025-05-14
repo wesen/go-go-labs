@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	
+
 	"github.com/olekukonko/tablewriter"
 )
 

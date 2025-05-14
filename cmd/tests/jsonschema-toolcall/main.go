@@ -1,16 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/go-go-golems/geppetto/pkg/helpers"
 	"github.com/invopop/jsonschema"
 )
 
 // https://chat.openai.com/c/08d9679f-7f10-41b3-b777-bcb7ed479918
-
-import (
-	"encoding/json"
-	"fmt"
-)
 
 func exampleFunction(a int, b string) {
 	fmt.Printf("Function called with a = %d and b = %s\n", a, b)

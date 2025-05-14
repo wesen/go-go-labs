@@ -2,10 +2,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tests/plugin-test-2/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"os"
 )
 
 type CounterImpl struct {

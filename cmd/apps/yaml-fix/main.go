@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 func prettyPrintJSON(raw string) (string, error) {

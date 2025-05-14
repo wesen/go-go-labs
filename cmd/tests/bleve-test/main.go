@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blevesearch/bleve"
 	"strings"
+
+	"github.com/blevesearch/bleve"
 )
 
 func main() {

@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"strings"
 )
 
 type ParameterDefinition struct {

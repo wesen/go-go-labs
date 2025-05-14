@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/yuin/gopher-lua"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 func main() {

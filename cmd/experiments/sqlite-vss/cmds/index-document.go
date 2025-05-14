@@ -3,6 +3,8 @@ package cmds
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -10,7 +12,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/go-go-labs/cmd/experiments/sqlite-vss/pkg"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type IndexDocumentCommand struct {

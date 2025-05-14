@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"os"
+
+	"github.com/PaesslerAG/jsonpath"
 )
 
 func main() {

@@ -3,13 +3,14 @@ package pkg
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"runtime"
 	"text/template"
+
+	"github.com/ThreeDotsLabs/watermill"
+	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/rs/zerolog/log"
 )
 
 type Track struct {

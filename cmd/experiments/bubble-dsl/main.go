@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
@@ -17,7 +19,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 type WidgetConfig struct {

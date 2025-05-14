@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/milosgajdos/go-embeddings/openai"
 	"github.com/philippgille/chromem-go"
 

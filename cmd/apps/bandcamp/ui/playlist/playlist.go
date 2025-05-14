@@ -2,6 +2,9 @@ package playlist
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -11,8 +14,6 @@ import (
 	ui2 "github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/ui"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/ui/search"
 	"github.com/pkg/errors"
-	"os"
-	"time"
 )
 
 // states

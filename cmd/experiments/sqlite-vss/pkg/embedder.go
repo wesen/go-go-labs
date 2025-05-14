@@ -4,14 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/milosgajdos/go-embeddings"
 	"github.com/milosgajdos/go-embeddings/openai"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 type Embedder struct {

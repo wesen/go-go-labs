@@ -3,14 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os"
+	"path"
+
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/text"
-	"log"
-	"os"
-	"path"
 )
 
 type CodeBlock struct {

@@ -5,13 +5,13 @@ package templates
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"fmt"
-	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
 	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
 )
 
 type CalendarDay struct {

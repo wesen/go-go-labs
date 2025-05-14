@@ -3,13 +3,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-go-golems/go-go-labs/cmd/tests/plugin-test-2/shared"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/go-go-golems/go-go-labs/cmd/tests/plugin-test-2/shared"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 )
 
 func main() {

@@ -4,14 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/go-go-golems/clay/pkg/watcher"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/go-go-golems/clay/pkg/watcher"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 // First version

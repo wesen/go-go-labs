@@ -3,6 +3,9 @@ package cmds
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -11,8 +14,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/gtm/pkg"
 	"github.com/pkg/errors"
-	"os"
-	"strings"
 )
 
 type TriggersCommand struct {

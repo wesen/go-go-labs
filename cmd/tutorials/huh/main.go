@@ -1,16 +1,14 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/charmbracelet/huh"
 	"github.com/go-go-golems/clay/pkg/cmds"
 	cmds2 "github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/loaders"
-)
-
-import (
-	"fmt"
-	"github.com/charmbracelet/huh"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
+	"github.com/go-go-golems/glazed/pkg/cmds/loaders"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 )

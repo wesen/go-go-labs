@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	totalTasks    int
+	totalTasks     int
 	remainingTasks int
 )
 
@@ -26,14 +26,14 @@ var rootCmd = &cobra.Command{
 		if remainingTasks < 0 {
 			return errors.New("--remaining must be a non-negative integer")
 		}
-        if remainingTasks > totalTasks {
-            return errors.Errorf("--remaining (%d) cannot be greater than --total (%d)", remainingTasks, totalTasks)
-        }
+		if remainingTasks > totalTasks {
+			return errors.Errorf("--remaining (%d) cannot be greater than --total (%d)", remainingTasks, totalTasks)
+		}
 
 		// Calculate SLA Status
-        // Avoid division by zero, already checked totalTasks > 0
+		// Avoid division by zero, already checked totalTasks > 0
 		slaPercentage := float64(totalTasks-remainingTasks) / float64(totalTasks) * 100
-        slaString := fmt.Sprintf("%.0f%%", slaPercentage) // Format as integer percentage
+		slaString := fmt.Sprintf("%.0f%%", slaPercentage) // Format as integer percentage
 
 		// Prepare table data
 		data := [][]string{
@@ -42,14 +42,13 @@ var rootCmd = &cobra.Command{
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Team Name", "Total Task", "Remaining Task", "SLA Status %"})
-        table.SetHeaderAlignment(tablewriter.ALIGN_CENTER)
-        table.SetAlignment(tablewriter.ALIGN_CENTER) // Default alignment
-        table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_CENTER, tablewriter.ALIGN_CENTER, tablewriter.ALIGN_CENTER}) // Align first column left
-        table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-        table.SetCenterSeparator("|")
-        table.SetRowLine(true) // Enable row line
-        table.SetHeaderLine(true) // Enable header line separator
-
+		table.SetHeaderAlignment(tablewriter.ALIGN_CENTER)
+		table.SetAlignment(tablewriter.ALIGN_CENTER)                                                                                          // Default alignment
+		table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_CENTER, tablewriter.ALIGN_CENTER, tablewriter.ALIGN_CENTER}) // Align first column left
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.SetCenterSeparator("|")
+		table.SetRowLine(true)    // Enable row line
+		table.SetHeaderLine(true) // Enable header line separator
 
 		table.AppendBulk(data)
 		table.Render()
@@ -71,4 +70,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

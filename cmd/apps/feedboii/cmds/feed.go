@@ -3,6 +3,14 @@ package cmds
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"sync"
+
 	map_pool "github.com/go-go-golems/clay/pkg/workerpool/map-pool"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -13,13 +21,6 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"sync"
 )
 
 type FeedCommand struct {

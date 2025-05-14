@@ -3,10 +3,11 @@ package chapters
 import (
 	"database/sql"
 	"encoding/json"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/pkg/errors"
 	"os"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 )
 
 type Chapter struct {

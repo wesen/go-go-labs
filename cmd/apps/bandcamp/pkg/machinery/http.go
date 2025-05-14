@@ -2,8 +2,9 @@ package machinery
 
 import (
 	"context"
-	"github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/pkg"
 	"net/http"
+
+	"github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/pkg"
 )
 
 type HTTPServer struct {

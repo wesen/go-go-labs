@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/files"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func main() {

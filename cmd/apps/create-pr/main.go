@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
+
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-go-golems/clay/pkg"
 	"github.com/go-go-golems/glazed/pkg/cmds"

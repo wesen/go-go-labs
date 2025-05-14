@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/go-go-golems/go-go-labs/cmd/experiments/funcmap-plugin/shared"
-	"github.com/hashicorp/go-plugin"
 	"os"
 	"os/exec"
 	"text/template"
+
+	"github.com/go-go-golems/go-go-labs/cmd/experiments/funcmap-plugin/shared"
+	"github.com/hashicorp/go-plugin"
 )
 
 // createFuncStubs creates stub functions that forward the function calls to the plugin.

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"strconv"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-	"strconv"
-	"testing"
 )
 
 // test case structure

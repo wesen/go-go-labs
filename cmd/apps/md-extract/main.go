@@ -5,10 +5,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/cli"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cli"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"

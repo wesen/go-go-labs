@@ -4,9 +4,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"log"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"log"
 )
 
 var BasicLexer = lexer.MustSimple([]lexer.SimpleRule{

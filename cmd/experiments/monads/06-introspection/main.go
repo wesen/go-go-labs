@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // State contains the data that can be introspected from a monad

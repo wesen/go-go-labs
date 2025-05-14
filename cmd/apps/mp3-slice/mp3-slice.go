@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -11,7 +13,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/mp3-slice/mp3lib"
 	"github.com/pkg/errors"
-	"path/filepath"
 )
 
 // SliceCommand is the command structure for the slice command

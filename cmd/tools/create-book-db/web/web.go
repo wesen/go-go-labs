@@ -2,11 +2,12 @@ package web
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/chapters"
 	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/chapters"
 )
 
 const indexTemplate = `

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"gonum.org/v1/gonum/stat/distuv"
 	"time"
+
+	"gonum.org/v1/gonum/stat/distuv"
 )
 
 type ParetoBehavior struct {

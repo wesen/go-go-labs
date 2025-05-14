@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"os"
 	"strings"
 	"text/template"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Define the structures

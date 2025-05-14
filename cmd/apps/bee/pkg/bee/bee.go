@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/time/rate"
 	"io"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/time/rate"
 )
 
 const (

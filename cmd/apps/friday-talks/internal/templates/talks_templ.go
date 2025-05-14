@@ -5,14 +5,14 @@ package templates
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"fmt"
+	"time"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
 	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/services"
-	"time"
 )
 
 func TalksList(user *models.User, talks []*models.Talk, status string) templ.Component {

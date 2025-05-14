@@ -3,13 +3,14 @@ package cmds
 import (
 	"context"
 	"fmt"
-	_ "github.com/googollee/go-socket.io"
-	socketio "github.com/googollee/go-socket.io"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	_ "github.com/googollee/go-socket.io"
+	socketio "github.com/googollee/go-socket.io"
+	"github.com/spf13/cobra"
 )
 
 type Bee struct {

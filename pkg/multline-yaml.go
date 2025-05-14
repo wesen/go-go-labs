@@ -1,10 +1,11 @@
 package pkg
 
 import (
-	"github.com/go-go-golems/glazed/pkg/types"
-	"gopkg.in/yaml.v3"
 	"reflect"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 type MultiLineString string

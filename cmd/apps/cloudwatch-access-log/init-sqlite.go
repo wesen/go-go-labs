@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	"io"
 )
 
 type InitSQLiteCommand struct {

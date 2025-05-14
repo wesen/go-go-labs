@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
+
 	ahocorasick "github.com/BobuSumisu/aho-corasick"
 	clay "github.com/go-go-golems/clay/pkg"
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -16,10 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
-	"os"
-	"path/filepath"
-	"strings"
-	"unicode"
 )
 
 // findAllMarkdownFiles walks the given directory and returns the paths of all markdown files found.

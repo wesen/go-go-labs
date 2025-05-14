@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"io/fs"
 	"strings"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 //go:embed data.sql

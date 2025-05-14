@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type File struct {

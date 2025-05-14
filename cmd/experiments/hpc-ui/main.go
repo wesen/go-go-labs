@@ -4,10 +4,11 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/spf13/cobra"
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/spf13/cobra"
 )
 
 //go:embed templates/*

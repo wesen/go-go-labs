@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/tiktoken-go/tokenizer"
-	"log"
 )
 
 func SplitString(input string, separators []string, model tokenizer.Model) (string, string, error) {

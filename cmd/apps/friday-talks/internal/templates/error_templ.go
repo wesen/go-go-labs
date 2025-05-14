@@ -5,10 +5,11 @@ package templates
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
-import "github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+import (
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
+	"github.com/go-go-golems/go-go-labs/cmd/apps/friday-talks/internal/models"
+)
 
 func Error(user *models.User, statusCode int, title string, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

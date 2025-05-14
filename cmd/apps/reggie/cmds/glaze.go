@@ -3,12 +3,13 @@ package cmds
 import (
 	"bufio"
 	"context"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/pkg/errors"
 	"os"
 	"regexp"
 	"strconv"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"

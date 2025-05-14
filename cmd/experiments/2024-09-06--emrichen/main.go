@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/go-emrichen/pkg/emrichen"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
 )
 
 func main() {

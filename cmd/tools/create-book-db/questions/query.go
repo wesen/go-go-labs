@@ -2,6 +2,7 @@ package questions
 
 import (
 	"database/sql"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/utils"
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library
 )

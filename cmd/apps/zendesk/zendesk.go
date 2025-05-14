@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/levigross/grequests"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/levigross/grequests"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 func (zd *ZendeskConfig) getTicketById(id string) Ticket {

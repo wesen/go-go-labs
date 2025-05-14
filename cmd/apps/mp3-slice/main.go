@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func ensureDirExists(dirPath string) error {

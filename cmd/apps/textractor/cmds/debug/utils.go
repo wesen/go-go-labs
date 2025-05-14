@@ -1,9 +1,10 @@
 package debug
 
 import (
-	"github.com/go-go-golems/go-go-labs/cmd/apps/textractor/pkg"
 	"log"
 	"os/exec"
+
+	"github.com/go-go-golems/go-go-labs/cmd/apps/textractor/pkg"
 
 	"github.com/spf13/cobra"
 )

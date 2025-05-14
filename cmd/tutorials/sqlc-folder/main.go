@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"log"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tutorials/sqlc-folder/tutorial"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 )
 
 //go:embed schema.sql

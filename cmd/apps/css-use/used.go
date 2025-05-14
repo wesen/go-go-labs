@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"sort"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"sort"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )

@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/css"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/css"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type Rules = *orderedmap.OrderedMap[string, string]

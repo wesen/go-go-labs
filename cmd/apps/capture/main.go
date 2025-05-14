@@ -1,25 +1,23 @@
 package main
 
 import (
-	"github.com/alecthomas/kong"
-	"github.com/go-go-golems/glazed/pkg/helpers"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-)
-
-// https://chat.openai.com/share/523b6523-8984-4a06-ba40-ddeb98cc019b
-
-import (
 	"bufio"
 	"fmt"
-	"github.com/charmbracelet/gum/write"
-	"github.com/go-go-golems/clay/pkg"
-	"github.com/spf13/viper"
 	"os"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/alecthomas/kong"
+	"github.com/charmbracelet/gum/write"
+	"github.com/go-go-golems/clay/pkg"
+	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+// https://chat.openai.com/share/523b6523-8984-4a06-ba40-ddeb98cc019b
 
 const mdTemplate = `
 ## {{.Title}} 

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
+	"os/exec"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tests/plugin-test/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"os"
-	"os/exec"
 )
 
 func main() {

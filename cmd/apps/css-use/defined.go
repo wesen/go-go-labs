@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"sort"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -11,9 +15,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html"
-	"io"
-	"sort"
-	"strings"
 )
 
 type DefinedCommand struct {

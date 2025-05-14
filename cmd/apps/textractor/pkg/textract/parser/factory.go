@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+
 	"github.com/aws/aws-sdk-go/service/textract"
 )
 

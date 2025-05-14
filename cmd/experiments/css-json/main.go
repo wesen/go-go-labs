@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/css"
 	"os"
 	"strings"
+
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/css"
 
 	"golang.org/x/net/html"
 )

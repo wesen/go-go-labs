@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	lua3 "github.com/go-go-golems/glazed/pkg/lua"
 	"math/rand"
+
+	lua3 "github.com/go-go-golems/glazed/pkg/lua"
 
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/spf13/cobra"

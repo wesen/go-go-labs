@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"k8s.io/client-go/util/jsonpath"
 	"os"
+
+	"k8s.io/client-go/util/jsonpath"
 )
 
 func main() {

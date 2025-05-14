@@ -3,6 +3,7 @@ package chapters
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/utils"
 )
 

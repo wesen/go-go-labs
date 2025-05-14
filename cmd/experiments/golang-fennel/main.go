@@ -4,8 +4,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/yuin/gopher-lua"
 	"os"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 // Go function to be called from Fennel

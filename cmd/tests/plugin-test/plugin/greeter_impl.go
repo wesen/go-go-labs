@@ -1,12 +1,13 @@
 package main
 
 import (
+	"net/rpc"
+	"os"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tests/plugin-test/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
-	"net/rpc"
-	"os"
 )
 
 type GreeterHello struct {

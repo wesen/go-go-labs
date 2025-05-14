@@ -3,6 +3,7 @@ package cmds
 import (
 	"embed"
 	_ "embed"
+
 	glazed_cmds "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	pinocchio_cmds "github.com/go-go-golems/pinocchio/pkg/cmds"

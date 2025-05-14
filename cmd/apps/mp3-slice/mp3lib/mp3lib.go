@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
@@ -28,6 +27,8 @@ import (
 	"regexp"
 	"strconv"
 	"syscall"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var (

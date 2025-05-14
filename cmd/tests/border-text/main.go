@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
 	"golang.org/x/term"
-	"os"
 )
 
 func drawBorderedMessage(msg string) string {

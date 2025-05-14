@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-go-golems/go-go-labs/cmd/experiments/funcmap-plugin/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
-	"os"
 )
 
 type Plugin struct{}

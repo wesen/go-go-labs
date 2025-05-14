@@ -11,8 +11,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/go-go-golems/go-go-labs/pkg/snakemake"
 	"github.com/go-go-golems/go-go-labs/pkg/jobreports"
+	"github.com/go-go-golems/go-go-labs/pkg/snakemake"
 )
 
 type SnakemakeViewerCommand struct {
@@ -221,10 +221,10 @@ func (c *SnakemakeViewerCommand) legacyOutput(logData snakemake.LogData, verbose
 func (c *SnakemakeViewerCommand) structuredOutput(ctx context.Context, gp middlewares.Processor, logData snakemake.LogData, verbose bool, dataType string, filename string) error {
 	if dataType == "summary" || dataType == "all" {
 		err := gp.AddRow(ctx, types.NewRowFromMap(map[string]interface{}{
-			"total_jobs":      logData.TotalJobs,
-			"completed_jobs":  logData.Completed,
+			"total_jobs":       logData.TotalJobs,
+			"completed_jobs":   logData.Completed,
 			"in_progress_jobs": logData.InProgress,
-			"filename":        filename,
+			"filename":         filename,
 		}))
 		if err != nil {
 			return err
@@ -248,11 +248,11 @@ func (c *SnakemakeViewerCommand) structuredOutput(ctx context.Context, gp middle
 			}
 
 			ruleRow := types.NewRowFromMap(map[string]interface{}{
-				"rule_name":       ruleName,
-				"total_jobs":      len(rule.Jobs),
-				"completed_jobs":  completedJobs,
+				"rule_name":        ruleName,
+				"total_jobs":       len(rule.Jobs),
+				"completed_jobs":   completedJobs,
 				"average_duration": avgDuration.String(),
-				"filename":        filename,
+				"filename":         filename,
 			})
 
 			for _, resource := range rule.Resources {

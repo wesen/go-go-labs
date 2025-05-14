@@ -3,11 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/chapters"
 	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/questions"
 	"github.com/go-go-golems/go-go-labs/cmd/tools/create-book-db/web"
-	"os"
-	"strings"
 )
 
 func initDB() (*sql.DB, error) {

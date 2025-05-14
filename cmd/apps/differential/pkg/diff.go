@@ -2,9 +2,10 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/go-go-golems/go-go-labs/cmd/apps/differential/kmp"
 	"strings"
 	"text/template"
+
+	"github.com/go-go-golems/go-go-labs/cmd/apps/differential/kmp"
 )
 
 // Change represents a single change in the DSL.

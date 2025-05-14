@@ -2,6 +2,10 @@ package cmds
 
 import (
 	"context"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -9,11 +13,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	pkg2 "github.com/go-go-golems/go-go-labs/cmd/apps/shopperapproved/pkg"
-	"os"
-	"strconv"
-	"time"
+	"github.com/pkg/errors"
 )
-import "github.com/pkg/errors"
 
 type GetProductReviewsCommand struct {
 	*cmds.CommandDescription

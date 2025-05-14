@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/ThreeDotsLabs/watermill/message"
 	tea "github.com/charmbracelet/bubbletea"
 	pkg2 "github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/pkg"
@@ -10,7 +12,6 @@ import (
 	"github.com/go-go-golems/go-go-labs/cmd/apps/bandcamp/ui/playlist"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func main() {

@@ -2,8 +2,9 @@ package mp3lib
 
 import (
 	"context"
-	"golang.org/x/sync/errgroup"
 	"io"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // CopyWithCancel is similar to io.Copy but can be cancelled using the provided context.

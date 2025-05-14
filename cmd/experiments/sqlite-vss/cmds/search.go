@@ -3,6 +3,9 @@ package cmds
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmds_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
@@ -13,8 +16,6 @@ import (
 	"github.com/go-go-golems/go-go-labs/cmd/experiments/sqlite-vss/pkg"
 	pinocchio_cmds "github.com/go-go-golems/pinocchio/pkg/cmds"
 	"github.com/pkg/errors"
-	"os"
-	"strings"
 )
 
 type SearchCommand struct {

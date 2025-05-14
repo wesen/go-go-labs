@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/xuri/excelize/v2"
 	"log"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/xuri/excelize/v2"
 )
 
 type RowData map[string]interface{}
