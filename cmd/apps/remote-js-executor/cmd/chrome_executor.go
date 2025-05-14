@@ -16,18 +16,10 @@ type ChromeExecutor struct {
 	navigateToURL string
 	allocCtx      context.Context
 	cancelAlloc   context.CancelFunc
-	// ctx           context.Context // Removed
-	// cancelCtx     context.CancelFunc // Removed
-	// mutex ensures safe concurrent access
-	mutex sync.Mutex
-}
-
-// logCancelFunc wraps a context.CancelFunc to log when it is called
-func logCancelFunc(name string, cancel context.CancelFunc) context.CancelFunc {
-	return func() {
-		log.Debug().Str("name", name).Msg("Cancelling context")
-		cancel()
-	}
+	tabCtx        context.Context // persistent tab context
+	cancelTab     context.CancelFunc
+	mutex         sync.Mutex
+	currentURL    string
 }
 
 // NewChromeExecutor creates a new ChromeExecutor instance
@@ -44,28 +36,26 @@ func NewChromeExecutor(chromeURL, navigateToURL string) (*ChromeExecutor, error)
 		return nil, fmt.Errorf("allocator context failed immediately: %w", allocCtx.Err())
 	}
 
-	// // Create context // Removed this part
-	// ctx, cancelCtx := chromedp.NewContext(allocCtx, chromedp.WithLogf(logChromeDebug))
-	// // Check ctx immediately
-	// if ctx.Err() != nil {
-	// 	log.Warn().Err(ctx.Err()).Msg("NewChromeExecutor: ctx is already done after NewContext")
-	// }
-
 	log.Debug().Msg("NewChromeExecutor: Allocator context created")
+
+	// Create a persistent tab that lives until Close()
+	tabCtx, cancelTab := chromedp.NewContext(allocCtx, chromedp.WithLogf(logChromeDebug))
+	if tabCtx.Err() != nil {
+		cancelAlloc()
+		return nil, fmt.Errorf("tab context failed immediately: %w", tabCtx.Err())
+	}
+
+	log.Debug().Msg("NewChromeExecutor: Persistent tab context created")
 
 	return &ChromeExecutor{
 		chromeURL:     chromeURL,
 		navigateToURL: navigateToURL,
 		allocCtx:      allocCtx,
 		cancelAlloc:   cancelAlloc,
-		// ctx:           ctx, // Removed
-		// cancelCtx:     cancelCtx, // Removed
+		tabCtx:        tabCtx,
+		cancelTab:     cancelTab,
+		currentURL:    "",
 	}, nil
-}
-
-// logChromeDebug is a logger function for Chrome debugging messages
-func logChromeDebug(format string, args ...interface{}) {
-	log.Debug().Msgf("[ChromeDP] "+format, args...)
 }
 
 // ExecuteJavaScript executes the provided JavaScript code in Chrome
@@ -75,39 +65,18 @@ func (c *ChromeExecutor) ExecuteJavaScript(ctx context.Context, js string) (stri
 
 	log.Debug().Msg("ExecuteJavaScript: Acquired mutex")
 
-	// Create a new task-specific chromedp context from the allocator context
-	taskCtx, taskCancel := chromedp.NewContext(c.allocCtx, chromedp.WithLogf(logChromeDebug))
-	defer taskCancel()
-
-	if taskCtx.Err() != nil {
-		log.Error().Err(taskCtx.Err()).Msg("ExecuteJavaScript: taskCtx from allocator is already done immediately after creation")
-		return "", fmt.Errorf("taskCtx creation failed: %w", taskCtx.Err())
-	}
-
-	// Create a timeout context for this specific task
-	ctxWithTimeout, cancelTimeout := context.WithTimeout(taskCtx, 10*time.Second)
-	defer cancelTimeout()
-
+	// Create a timeout context for this specific task using the persistent tab context
 	log.Debug().Str("js_code", js).Msg("ExecuteJavaScript: Preparing to execute JavaScript")
-
-	// // Check parent context status // This referred to c.ctx which is removed
-	// if c.ctx.Err() != nil { //
-	// 	log.Warn().Err(c.ctx.Err()).Msg("ExecuteJavaScript: Parent context c.ctx is already done before creating timeout context")
-	// }
-	// Check timeout context status immediately after creation
-	if ctxWithTimeout.Err() != nil {
-		// This might happen if taskCtx itself was bad, or if 10s is somehow too short (unlikely for just creation)
-		log.Warn().Err(ctxWithTimeout.Err()).Msg("ExecuteJavaScript: ctxWithTimeout is already done immediately after creation from taskCtx")
-	}
 
 	var result interface{}
 	actions := []chromedp.Action{}
 
-	// If navigateToURL is set, navigate to that URL first
-	if c.navigateToURL != "" {
+	// If we need to navigate and we're not already at the URL, do it first
+	if c.navigateToURL != "" && c.currentURL != c.navigateToURL {
 		log.Debug().Str("url", c.navigateToURL).Msg("Navigating to URL before executing JavaScript")
 		actions = append(actions, chromedp.Navigate(c.navigateToURL))
 		actions = append(actions, chromedp.Sleep(1*time.Second)) // Give page time to load
+		c.currentURL = c.navigateToURL                           // Update current URL
 	}
 
 	// Add JavaScript execution action
@@ -117,7 +86,7 @@ func (c *ChromeExecutor) ExecuteJavaScript(ctx context.Context, js string) (stri
 	log.Debug().Int("num_actions", len(actions)).Msg("ExecuteJavaScript: About to run actions")
 
 	// Run all actions
-	err := chromedp.Run(ctxWithTimeout, actions...)
+	err := chromedp.Run(c.tabCtx, actions...)
 	log.Debug().Msg("ExecuteJavaScript: chromedp.Run has completed/returned")
 
 	if err != nil {
@@ -142,27 +111,21 @@ func (c *ChromeExecutor) NavigateToPage(ctx context.Context, url string) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	log.Debug().Str("url", url).Msg("NavigateToPage: Navigating to URL")
-
-	// Create a new task-specific chromedp context from the allocator context
-	taskCtx, taskCancel := chromedp.NewContext(c.allocCtx, chromedp.WithLogf(logChromeDebug))
-	defer taskCancel()
-
-	if taskCtx.Err() != nil {
-		log.Error().Err(taskCtx.Err()).Msg("NavigateToPage: taskCtx from allocator is already done immediately after creation")
-		return fmt.Errorf("taskCtx creation failed: %w", taskCtx.Err())
+	// Skip navigation if we're already at the URL
+	if c.currentURL == url {
+		log.Debug().Str("url", url).Msg("NavigateToPage: Already at the requested URL, skipping navigation")
+		return nil
 	}
 
-	// Create a timeout context for this specific task
-	ctxWithTimeout, cancelTimeout := context.WithTimeout(taskCtx, 10*time.Second)
-	defer cancelTimeout()
+	log.Debug().Str("url", url).Msg("NavigateToPage: Navigating to URL")
 
-	if ctxWithTimeout.Err() != nil {
-		log.Warn().Err(ctxWithTimeout.Err()).Msg("NavigateToPage: ctxWithTimeout is already done immediately after creation from taskCtx")
+	if c.tabCtx.Err() != nil {
+		log.Warn().Err(c.tabCtx.Err()).Msg("NavigateToPage: ctxWithTimeout is already done immediately after creation")
+		return fmt.Errorf("timeout context creation failed: %w", c.tabCtx.Err())
 	}
 
 	// Navigate to the specified URL
-	err := chromedp.Run(ctxWithTimeout,
+	err := chromedp.Run(c.tabCtx,
 		chromedp.Navigate(url),
 		chromedp.Sleep(1*time.Second), // Give page time to load
 	)
@@ -172,16 +135,26 @@ func (c *ChromeExecutor) NavigateToPage(ctx context.Context, url string) error {
 		return fmt.Errorf("failed to navigate to URL %s: %w", url, err)
 	}
 
-	// Update the default navigation URL for future ExecuteJavaScript calls
+	// Update the current URL and the default navigation URL for future calls
+	c.currentURL = url
 	c.navigateToURL = url
 
 	log.Debug().Str("url", url).Msg("NavigateToPage: Successfully navigated to URL")
 	return nil
 }
 
+// logChromeDebug is a logger function for Chrome debugging messages
+func logChromeDebug(format string, args ...interface{}) {
+	log.Debug().Msgf("[ChromeDP] "+format, args...)
+}
+
 // Close cleans up resources
 func (c *ChromeExecutor) Close() {
-	log.Debug().Msg("Closing Chrome executor and freeing allocator resources")
-	// c.cancelCtx() // Removed
-	c.cancelAlloc()
+	log.Debug().Msg("Closing Chrome executor and freeing resources")
+	if c.cancelTab != nil {
+		c.cancelTab()
+	}
+	if c.cancelAlloc != nil {
+		c.cancelAlloc()
+	}
 }

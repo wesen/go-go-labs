@@ -4,4 +4,5 @@ console.log("Hello, world!");
 123;
 256;
 123;
-256;
+a += 1;
+a;
