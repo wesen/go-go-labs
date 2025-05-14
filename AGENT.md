@@ -2,7 +2,7 @@
 
 ## Go Commands
 
-- Build: `make build` (runs go generate ./... and go build ./...)
+- Build: Run `go build xxx` on the folder you are working on.
 - Test: `make test` (runs all tests with `go test ./...`)
 - Run specific test: `go test ./path/to/package -run TestName`
 
@@ -32,4 +32,5 @@ Use cobra for command-line applications.
 Use the "defaults" package name, instead of "default" package name, as it's reserved in go.
 Use github.com/pkg/errors for wrapping errors.
 When starting goroutines, use errgroup.
+go doesn't support the ternary operator, use if else instead.
 </goGuidelines>

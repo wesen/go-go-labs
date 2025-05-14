@@ -137,6 +137,48 @@ func (c *ChromeExecutor) ExecuteJavaScript(ctx context.Context, js string) (stri
 	return resultStr, nil
 }
 
+// NavigateToPage navigates Chrome to the specified URL
+func (c *ChromeExecutor) NavigateToPage(ctx context.Context, url string) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	log.Debug().Str("url", url).Msg("NavigateToPage: Navigating to URL")
+
+	// Create a new task-specific chromedp context from the allocator context
+	taskCtx, taskCancel := chromedp.NewContext(c.allocCtx, chromedp.WithLogf(logChromeDebug))
+	defer taskCancel()
+
+	if taskCtx.Err() != nil {
+		log.Error().Err(taskCtx.Err()).Msg("NavigateToPage: taskCtx from allocator is already done immediately after creation")
+		return fmt.Errorf("taskCtx creation failed: %w", taskCtx.Err())
+	}
+
+	// Create a timeout context for this specific task
+	ctxWithTimeout, cancelTimeout := context.WithTimeout(taskCtx, 10*time.Second)
+	defer cancelTimeout()
+
+	if ctxWithTimeout.Err() != nil {
+		log.Warn().Err(ctxWithTimeout.Err()).Msg("NavigateToPage: ctxWithTimeout is already done immediately after creation from taskCtx")
+	}
+
+	// Navigate to the specified URL
+	err := chromedp.Run(ctxWithTimeout,
+		chromedp.Navigate(url),
+		chromedp.Sleep(1*time.Second), // Give page time to load
+	)
+
+	if err != nil {
+		log.Error().Err(err).Str("url", url).Msg("NavigateToPage: Failed to navigate to URL")
+		return fmt.Errorf("failed to navigate to URL %s: %w", url, err)
+	}
+
+	// Update the default navigation URL for future ExecuteJavaScript calls
+	c.navigateToURL = url
+
+	log.Debug().Str("url", url).Msg("NavigateToPage: Successfully navigated to URL")
+	return nil
+}
+
 // Close cleans up resources
 func (c *ChromeExecutor) Close() {
 	log.Debug().Msg("Closing Chrome executor and freeing allocator resources")
