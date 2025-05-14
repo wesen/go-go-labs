@@ -9,17 +9,14 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 type ExecuteOnceSettings struct {
-	FilePath     string `glazed.parameter:"file"`
-	Script       string `glazed.parameter:"script"`
-	ChromeURL    string `glazed.parameter:"chrome-url"`
+	FilePath      string `glazed.parameter:"file"`
+	Script        string `glazed.parameter:"script"`
+	ChromeURL     string `glazed.parameter:"chrome-url"`
 	NavigateToURL string `glazed.parameter:"navigate-to"`
 }
 
@@ -29,11 +26,6 @@ type ExecuteOnceCommand struct {
 }
 
 func newExecuteOnceCommand() (*cobra.Command, error) {
-	glazeLayer, err := settings.NewGlazedParameterLayers()
-	if err != nil {
-		return nil, fmt.Errorf("could not create Glazed parameter layer: %w", err)
-	}
-
 	cmd := &ExecuteOnceCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"execute",
@@ -65,14 +57,13 @@ func newExecuteOnceCommand() (*cobra.Command, error) {
 					parameters.WithDefault(""),
 				),
 			),
-			cmds.WithLayersList(glazeLayer),
 		),
 	}
 
-	return cli.BuildCobraCommandFromGlazeCommand(cmd)
+	return cli.BuildCobraCommandFromBareCommand(cmd)
 }
 
-func (c *ExecuteOnceCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ExecuteOnceCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &c.settings); err != nil {
 		return err
 	}
@@ -130,17 +121,10 @@ func (c *ExecuteOnceCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLa
 
 	log.Info().Str("source", sourceName).Msg("JavaScript execution completed")
 
-	// Output the result
-	row := types.NewRow(
-		types.MRP("status", "success"),
-		types.MRP("source", sourceName),
-		types.MRP("result", result),
-		types.MRP("chrome_url", c.settings.ChromeURL),
-	)
-
-	if err := gp.AddRow(ctx, row); err != nil {
-		return fmt.Errorf("failed to add row to processor: %w", err)
-	}
+	// Print the results
+	fmt.Printf("JavaScript Execution Results:\n")
+	fmt.Printf("  Source: %s\n", sourceName)
+	fmt.Printf("  Result: %s\n", result)
 
 	return nil
 }

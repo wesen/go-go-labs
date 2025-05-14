@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -44,27 +45,31 @@ func Execute() {
 		},
 	}
 
+	// Initialize help system
+	helpSystem := help.NewHelpSystem()
+	helpSystem.SetupCobraRootCommand(rootCmd)
+
 	// Add global flags
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 
 	// Add commands
-	execCmd, err := newWatchCommand()
+	watchCmd, err := newWatchCommand()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating watch command: %s\n", err)
+		log.Error().Err(err).Msg("Error creating watch command")
 		os.Exit(1)
 	}
-	rootCmd.AddCommand(execCmd)
+	rootCmd.AddCommand(watchCmd)
 
 	startCmd, err := newStartChromeCommand()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating start-chrome command: %s\n", err)
+		log.Error().Err(err).Msg("Error creating start-chrome command")
 		os.Exit(1)
 	}
 	rootCmd.AddCommand(startCmd)
 
 	execOnceCmd, err := newExecuteOnceCommand()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating execute-once command: %s\n", err)
+		log.Error().Err(err).Msg("Error creating execute-once command")
 		os.Exit(1)
 	}
 	rootCmd.AddCommand(execOnceCmd)
@@ -74,6 +79,7 @@ func Execute() {
 	defer cancel()
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		log.Error().Err(err).Msg("Command execution failed")
 		os.Exit(1)
 	}
 }

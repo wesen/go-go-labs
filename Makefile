@@ -19,6 +19,7 @@ test:
 
 build:
 	go generate ./...
+	goimports  -w pkg cmd
 	go build ./...
 
 goreleaser:

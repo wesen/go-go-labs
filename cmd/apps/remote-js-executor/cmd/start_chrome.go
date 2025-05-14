@@ -7,26 +7,22 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 type StartChromeSettings struct {
-	Port       int    `glazed.parameter:"port"`
+	Port        int    `glazed.parameter:"port"`
 	BrowserPath string `glazed.parameter:"browser-path"`
 	UserDataDir string `glazed.parameter:"user-data-dir"`
-	Headless   bool   `glazed.parameter:"headless"`
-	WaitMs     int    `glazed.parameter:"wait-ms"`
+	Headless    bool   `glazed.parameter:"headless"`
+	WaitMs      int    `glazed.parameter:"wait-ms"`
 }
 
 type StartChromeCommand struct {
@@ -35,11 +31,6 @@ type StartChromeCommand struct {
 }
 
 func newStartChromeCommand() (*cobra.Command, error) {
-	glazeLayer, err := settings.NewGlazedParameterLayers()
-	if err != nil {
-		return nil, fmt.Errorf("could not create Glazed parameter layer: %w", err)
-	}
-
 	cmd := &StartChromeCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"start-chrome",
@@ -77,14 +68,13 @@ func newStartChromeCommand() (*cobra.Command, error) {
 					parameters.WithDefault(1000),
 				),
 			),
-			cmds.WithLayersList(glazeLayer),
 		),
 	}
 
-	return cli.BuildCobraCommandFromGlazeCommand(cmd)
+	return cli.BuildCobraCommandFromBareCommand(cmd)
 }
 
-func (c *StartChromeCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *StartChromeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &c.settings); err != nil {
 		return err
 	}
@@ -169,21 +159,14 @@ func (c *StartChromeCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLa
 		cmd.Process.Kill()
 	}()
 
-	// Add output data to the processor
-	row := types.NewRow(
-		types.MRP("status", "success"),
-		types.MRP("browser", filepath.Base(browserPath)),
-		types.MRP("browser_path", browserPath),
-		types.MRP("pid", cmd.Process.Pid),
-		types.MRP("debug_url", fmt.Sprintf("http://localhost:%d", c.settings.Port)),
-		types.MRP("user_data_dir", userDataDir),
-		types.MRP("headless", c.settings.Headless),
-	)
-
-	// Output information for the user
-	if err := gp.AddRow(ctx, row); err != nil {
-		return fmt.Errorf("failed to add row to processor: %w", err)
-	}
+	// Print output information for the user
+	fmt.Printf("Chrome started successfully:\n")
+	fmt.Printf("  Browser: %s\n", filepath.Base(browserPath))
+	fmt.Printf("  Path: %s\n", browserPath)
+	fmt.Printf("  PID: %d\n", cmd.Process.Pid)
+	fmt.Printf("  Debug URL: http://localhost:%d\n", c.settings.Port)
+	fmt.Printf("  User data dir: %s\n", userDataDir)
+	fmt.Printf("  Headless mode: %v\n", c.settings.Headless)
 
 	// Block until Chrome exits if we're not waiting interactively
 	if err := cmd.Wait(); err != nil {
@@ -193,24 +176,6 @@ func (c *StartChromeCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLa
 
 	log.Info().Msg("Chrome exited successfully")
 	return nil
-}
-
-// logWriter is a simple writer that logs output to zerolog
-type logWriter struct {
-	prefix string
-}
-
-func newLogWriter(prefix string) *logWriter {
-	return &logWriter{prefix: prefix}
-}
-
-func (l *logWriter) Write(p []byte) (n int, err error) {
-	// Trim trailing whitespace and only log non-empty lines
-	text := strings.TrimSpace(string(p))
-	if text != "" {
-		log.Debug().Str("source", l.prefix).Msg(text)
-	}
-	return len(p), nil
 }
 
 // detectChromePath attempts to find Chrome or Chromium in standard locations
