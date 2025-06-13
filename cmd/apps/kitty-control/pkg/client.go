@@ -30,7 +30,7 @@ func NewClient(socketPath string) *Client {
 func NewClientFromEnv() (*Client, error) {
 	listenOn := os.Getenv("KITTY_LISTEN_ON")
 	log.Debug().Str("kitty_listen_on", listenOn).Msg("checking KITTY_LISTEN_ON environment variable")
-	
+
 	if listenOn == "" {
 		log.Error().Msg("KITTY_LISTEN_ON environment variable not set")
 		return nil, errors.New("KITTY_LISTEN_ON environment variable not set")
@@ -57,7 +57,7 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 // SendCommand sends a command to kitty and returns the response
 func (c *Client) SendCommand(ctx context.Context, cmd *KittyCommand) ([]byte, error) {
 	log.Debug().Str("command", cmd.Cmd).Msg("sending command to kitty")
-	
+
 	// Create the protocol string
 	protocolString, err := cmd.ToProtocolString()
 	if err != nil {
@@ -104,16 +104,38 @@ func (c *Client) SendCommand(ctx context.Context, cmd *KittyCommand) ([]byte, er
 
 	// Read the response
 	log.Trace().Msg("reading response from kitty")
-	response := make([]byte, 8192) // Buffer for response
-	n, err := conn.Read(response)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to read response")
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-	log.Debug().Int("response_size", n).Msg("received response from kitty")
-	log.Trace().Str("response", string(response[:n])).Msg("response content")
+	var response []byte
+	buffer := make([]byte, 8192)
 
-	return response[:n], nil
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if n == 0 {
+				log.Error().Err(err).Msg("failed to read response")
+				return nil, fmt.Errorf("failed to read response: %w", err)
+			}
+		}
+
+		response = append(response, buffer[:n]...)
+		log.Trace().Int("chunk_size", n).Int("total_size", len(response)).Msg("read response chunk")
+
+		// Check if we've reached the end of the kitty protocol message
+		if len(response) >= 2 && string(response[len(response)-2:]) == "\x1b\\" {
+			log.Debug().Msg("found end of kitty protocol message")
+			break
+		}
+
+		// If we got less than the buffer size, we've likely reached the end
+		if n < len(buffer) {
+			log.Debug().Msg("received partial buffer, assuming end of message")
+			break
+		}
+	}
+
+	log.Debug().Int("response_size", len(response)).Msg("received response from kitty")
+	log.Trace().Str("response", string(response)).Msg("response content")
+
+	return response, nil
 }
 
 // Helper methods for common commands

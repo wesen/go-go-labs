@@ -77,8 +77,10 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 	// Send command
 	response, err := client.List(ctx, payload)
 	if err != nil {
+		log.Error().Err(err).Msg("failed to list windows")
 		return fmt.Errorf("failed to list windows: %w", err)
 	}
+	log.Debug().Int("response_length", len(response)).Msg("received response from kitty")
 
 	// Parse response
 	var kittyResponse struct {
@@ -88,6 +90,8 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 
 	// Extract JSON from kitty protocol response
 	responseStr := string(response)
+	log.Trace().Str("raw_response", responseStr).Msg("raw response from kitty")
+
 	if len(responseStr) > 12 && responseStr[:12] == "\x1bP@kitty-cmd" {
 		// Find the JSON part
 		jsonStart := 12
@@ -95,28 +99,46 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 		if jsonEnd > jsonStart {
 			responseStr = responseStr[jsonStart:jsonEnd]
 		}
+		log.Debug().Int("json_start", jsonStart).Int("json_end", jsonEnd).Msg("extracted JSON from protocol wrapper")
 	}
+	log.Trace().Str("json_response", responseStr).Msg("extracted JSON response")
 
 	if err := json.Unmarshal([]byte(responseStr), &kittyResponse); err != nil {
+		log.Error().Err(err).Str("json_response", responseStr).Msg("failed to parse response")
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
+	log.Debug().Bool("ok", kittyResponse.OK).Int("data_size", len(kittyResponse.Data)).Msg("parsed kitty response")
 
 	if !kittyResponse.OK {
+		log.Error().Msg("kitty command failed")
 		return fmt.Errorf("kitty command failed")
 	}
 
-	// Parse the data as a list of windows/tabs
+	// The data field contains a JSON string that needs to be parsed again
+	var dataString string
+	if err := json.Unmarshal(kittyResponse.Data, &dataString); err != nil {
+		log.Error().Err(err).Str("data", string(kittyResponse.Data)).Msg("failed to parse data string")
+		return fmt.Errorf("failed to parse data string: %w", err)
+	}
+	log.Debug().Str("data_string", dataString).Msg("extracted data string")
+
+	// Parse the data string as a list of windows/tabs
 	var windowsData interface{}
-	if err := json.Unmarshal(kittyResponse.Data, &windowsData); err != nil {
+	if err := json.Unmarshal([]byte(dataString), &windowsData); err != nil {
+		log.Error().Err(err).Str("data_string", dataString).Msg("failed to parse windows data")
 		return fmt.Errorf("failed to parse windows data: %w", err)
 	}
+	log.Debug().Interface("windows_data", windowsData).Msg("parsed windows data")
 
 	// Convert to rows for structured output
 	if windowsList, ok := windowsData.([]interface{}); ok {
-		for _, window := range windowsList {
+		log.Debug().Int("window_count", len(windowsList)).Msg("processing windows list")
+		for i, window := range windowsList {
 			if windowMap, ok := window.(map[string]interface{}); ok {
+				log.Debug().Int("window_index", i).Interface("window", windowMap).Msg("processing window")
 				row := types.NewRowFromMap(windowMap)
 				if err := gp.AddRow(ctx, row); err != nil {
+					log.Error().Err(err).Int("window_index", i).Msg("failed to add window row")
 					return err
 				}
 			}
@@ -124,8 +146,10 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 	} else {
 		// Single window case
 		if windowMap, ok := windowsData.(map[string]interface{}); ok {
+			log.Debug().Interface("single_window", windowMap).Msg("processing single window")
 			row := types.NewRowFromMap(windowMap)
 			if err := gp.AddRow(ctx, row); err != nil {
+				log.Error().Err(err).Msg("failed to add single window row")
 				return err
 			}
 		}
