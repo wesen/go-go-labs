@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -148,7 +149,7 @@ func (c *QueryTasksCommand) RunIntoGlazeProcessor(
 }
 
 // getTaskDependencies retrieves the parent task IDs for a given task
-func getTaskDependencies(ctx context.Context, db *sql.DB, taskID int) ([]int, error) {
+func getTaskDependencies(ctx context.Context, db *sqlx.DB, taskID int) ([]int, error) {
 	query := `
 		SELECT parent_task_id
 		FROM task_dependencies

@@ -19,7 +19,7 @@ Build the tool from source:
 
 ```bash
 cd go-go-labs
-go build -o cmd/apps/agent-task-sqlite/agent-task-sqlite ./cmd/apps/agent-task-sqlite
+go build -o cmd/apptask-manager/agent-task-sqlite ./cmd/apps/agent-task-sqlite
 ```
 
 ## Database Configuration
@@ -48,21 +48,21 @@ First, create a project to organize your work:
 
 ```bash
 # Create a new project (slug auto-generated from name)
-./agent-task-sqlite create-project \
+task-manager create-project \
   --name="Authentication Analysis" \
   --description="Analyze authentication patterns and security implementations across the codebase"
 
 # Create a project with custom slug
-./agent-task-sqlite create-project \
+task-manager create-project \
   --name="Database Security Audit" \
   --description="Comprehensive security audit of database access patterns" \
   --slug="db-security"
 
 # List all projects
-./agent-task-sqlite list-projects
+task-manager list-projects
 
 # Show specific project by slug
-./agent-task-sqlite list-projects --project=authentication-analysis
+task-manager list-projects --project=authentication-analysis
 ```
 
 ### 2. Registering Agents
@@ -71,21 +71,21 @@ Create agents that will work on tasks:
 
 ```bash
 # Create a code analysis agent (slug auto-generated)
-./agent-task-sqlite create-agent \
+task-manager create-agent \
   --name="Code Analyzer" \
   --description="Specialized in analyzing code patterns and architecture"
 
 # Create an oracle analysis agent with custom slug
-./agent-task-sqlite create-agent \
+task-manager create-agent \
   --name="Oracle Analyst" \
   --description="Performs deep analysis and generates insights from gathered data" \
   --slug="oracle"
 
 # List all agents
-./agent-task-sqlite list-agents
+task-manager list-agents
 
 # Show specific agent by slug
-./agent-task-sqlite list-agents --agent=code-analyzer
+task-manager list-agents --agent=code-analyzer
 ```
 
 ### 3. Creating Tasks
@@ -94,13 +94,13 @@ Create tasks within your project:
 
 ```bash
 # Create a gather task using project slug
-./agent-task-sqlite insert-task \
+task-manager insert-task \
   --project=authentication-analysis \
   --type=gather_information \
   --instructions="Gather all authentication-related code patterns from the main application"
 
 # Create an analysis task with agent assignment and dependencies
-./agent-task-sqlite insert-task \
+task-manager insert-task \
   --project=authentication-analysis \
   --agent=oracle \
   --type=oracle_analysis \
@@ -108,15 +108,15 @@ Create tasks within your project:
   --dependencies=authentication-analysis/gather-all-authentication-related-code-patterns
 
 # Assign a pending task to an agent (sets status to in_progress)
-./agent-task-sqlite assign-task \
+task-manager assign-task \
   --agent=code-analyzer \
   --task=authentication-analysis/gather-all-authentication-related-code-patterns
 
 # Query tasks for a specific project
-./agent-task-sqlite query-tasks --project=authentication-analysis
+task-manager query-tasks --project=authentication-analysis
 
 # Query tasks assigned to a specific agent
-./agent-task-sqlite query-tasks --agent=code-analyzer
+task-manager query-tasks --agent=code-analyzer
 ```
 
 ### 4. Managing Code Locations
@@ -125,13 +125,13 @@ Store relevant code locations for tasks:
 
 ```bash
 # Add individual location
-./agent-task-sqlite insert-locations \
+task-manager insert-locations \
   --task-id=1 \
   --location="src/auth/login.go" \
   --description="Main login function with password validation"
 
 # Add multiple locations at once
-./agent-task-sqlite insert-locations \
+task-manager insert-locations \
   --task-id=1 \
   --locations="src/auth/middleware.go:Authentication middleware" \
   --locations="src/auth/jwt.go:JWT token handling" \
@@ -144,17 +144,17 @@ Generate reports for completed analysis:
 
 ```bash
 # Create a report with direct content
-./agent-task-sqlite create-report \
+task-manager create-report \
   --task-id=2 \
   --content="Authentication analysis complete. Found 3 potential security issues: 1) Weak password policy, 2) Missing rate limiting, 3) Insecure session storage."
 
 # Create a report from a file
-./agent-task-sqlite create-report \
+task-manager create-report \
   --task-id=2 \
   --content-file="analysis-report.md"
 
 # Create a report linked to specific locations
-./agent-task-sqlite create-report \
+task-manager create-report \
   --task-id=2 \
   --content="Security vulnerability found in authentication flow" \
   --location-ids=1,2,3
@@ -166,19 +166,19 @@ The tool provides powerful querying capabilities:
 
 ```bash
 # Show all pending tasks
-./agent-task-sqlite query-tasks --status=pending
+task-manager query-tasks --status=pending
 
 # Show tasks assigned to a specific agent
-./agent-task-sqlite query-tasks --agent=code-analyzer
+task-manager query-tasks --agent=code-analyzer
 
 # Show tasks for a project with dependencies
-./agent-task-sqlite query-tasks --project=authentication-analysis --show-deps
+task-manager query-tasks --project=authentication-analysis --show-deps
 
 # Show last 10 completed tasks
-./agent-task-sqlite query-tasks --status=completed --limit=10
+task-manager query-tasks --status=completed --limit=10
 
 # Show specific task details by project/task slug
-./agent-task-sqlite query-tasks --task=authentication-analysis/analyze-patterns --show-deps
+task-manager query-tasks --task=authentication-analysis/analyze-patterns --show-deps
 ```
 
 ## Output Formats
@@ -187,19 +187,19 @@ All commands support multiple output formats through Glazed:
 
 ```bash
 # JSON output
-./agent-task-sqlite query-tasks --output=json
+task-manager query-tasks --output=json
 
 # YAML output
-./agent-task-sqlite list-projects --output=yaml
+task-manager list-projects --output=yaml
 
 # CSV output
-./agent-task-sqlite list-agents --output=csv
+task-manager list-agents --output=csv
 
 # Table output (default)
-./agent-task-sqlite query-tasks --output=table
+task-manager query-tasks --output=table
 
 # Select specific fields
-./agent-task-sqlite query-tasks --fields=id,type,status,instructions
+task-manager query-tasks --fields=id,type,status,instructions
 ```
 
 ## Workflow Example
@@ -208,38 +208,38 @@ Here's a complete workflow example:
 
 ```bash
 # 1. Create a project
-./agent-task-sqlite create-project \
+task-manager create-project \
   --name="Database Security Audit" \
   --description="Comprehensive security audit of database access patterns" \
   --slug="db-security"
 
 # 2. Register agents
-./agent-task-sqlite create-agent \
+task-manager create-agent \
   --name="Security Scanner" \
   --description="Automated security pattern detection" \
   --slug="security-scanner"
 
 # 3. Create initial gather task
-./agent-task-sqlite insert-task \
+task-manager insert-task \
   --project=db-security \
   --type=gather_information \
   --instructions="Collect all database query patterns and access controls" \
   --slug="gather-db-patterns"
 
 # 4. Assign task to agent
-./agent-task-sqlite assign-task \
+task-manager assign-task \
   --agent=security-scanner \
   --task=db-security/gather-db-patterns
 
 # 5. Add code locations
-./agent-task-sqlite insert-locations \
+task-manager insert-locations \
   --task=db-security/gather-db-patterns \
   --locations="src/db/queries.go:Database query functions" \
   --locations="src/db/migrations/:Database schema migrations" \
   --locations="src/middleware/auth.go:Database access authorization"
 
 # 6. Create analysis task
-./agent-task-sqlite insert-task \
+task-manager insert-task \
   --project=db-security \
   --type=oracle_analysis \
   --instructions="Analyze database access patterns for security vulnerabilities" \
@@ -247,13 +247,13 @@ Here's a complete workflow example:
   --slug="analyze-security"
 
 # 7. Generate report
-./agent-task-sqlite create-report \
+task-manager create-report \
   --task=db-security/analyze-security \
   --content="Database security audit complete. Found SQL injection vulnerabilities in user input handling." \
   --location-ids=1,2
 
 # 8. Review results
-./agent-task-sqlite query-tasks --project=db-security --show-deps --output=json
+task-manager query-tasks --project=db-security --show-deps --output=json
 ```
 
 ## Database Schema
@@ -316,13 +316,13 @@ Each command provides detailed help:
 
 ```bash
 # General help
-./agent-task-sqlite --help
+task-manager --help
 
 # Command-specific help
-./agent-task-sqlite insert-task --help
-./agent-task-sqlite query-tasks --help
-./agent-task-sqlite assign-task --help
-./agent-task-sqlite create-report --help
+task-manager insert-task --help
+task-manager query-tasks --help
+task-manager assign-task --help
+task-manager create-report --help
 ```
 
 ## Environment Variables

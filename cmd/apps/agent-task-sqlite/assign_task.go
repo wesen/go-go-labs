@@ -11,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 // AssignTaskCommand assigns a task to an agent
@@ -22,6 +23,7 @@ type AssignTaskCommand struct {
 type AssignTaskSettings struct {
 	AgentSlug string `glazed.parameter:"agent"`
 	TaskID    string `glazed.parameter:"task"`
+	Force     bool   `glazed.parameter:"force"`
 }
 
 // Ensure interface implementation
@@ -46,18 +48,18 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 	defer db.Close()
 
 	// Resolve agent ID
-	agentID, err := ResolveAgentID(db, s.AgentSlug)
+	agentID, err := ResolveAgentID(ctx, db, s.AgentSlug)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve agent")
 	}
 
 	// Resolve task ID
-	taskID, err := ResolveTaskID(db, s.TaskID)
+	taskID, err := ResolveTaskID(ctx, db, s.TaskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve task")
 	}
 
-	// Check if task is available (pending status)
+	// Check if task is available (pending status) or if force is being used
 	var currentStatus string
 	var currentAgentID sql.NullInt64
 	var projectID int
@@ -68,8 +70,42 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "failed to check task status")
 	}
 
-	if currentStatus != "pending" {
-		return errors.Errorf("task is not available for assignment (current status: %s)", currentStatus)
+	// Check if task is already assigned
+	if currentAgentID.Valid && currentAgentID.Int64 != 0 {
+		if !s.Force {
+			return errors.Errorf("task is already assigned to agent %d (use --force to reassign)", currentAgentID.Int64)
+		}
+		log.Debug().Int64("current_agent_id", currentAgentID.Int64).Int("new_agent_id", agentID).Msg("Force reassigning task from one agent to another")
+	}
+
+	if currentStatus != "pending" && currentStatus != "in_progress" {
+		return errors.Errorf("task cannot be assigned (current status: %s)", currentStatus)
+	}
+
+	// Check if all dependencies are completed
+	log.Debug().Int("task_id", taskID).Msg("Checking task dependencies")
+	dependencies, err := getTaskDependencies(ctx, db, taskID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get task dependencies")
+	}
+	
+	if len(dependencies) > 0 {
+		log.Debug().Interface("dependencies", dependencies).Msg("Task has dependencies, checking completion status")
+		for _, depID := range dependencies {
+			var depStatus string
+			err := db.QueryRowContext(ctx, "SELECT status FROM tasks WHERE id = ?", depID).Scan(&depStatus)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check status of dependency task %d", depID)
+			}
+			log.Debug().Int("dependency_id", depID).Str("status", depStatus).Msg("Dependency status")
+			
+			if depStatus != "completed" {
+				return errors.Errorf("cannot assign task: dependency task %d is not completed (current status: %s)", depID, depStatus)
+			}
+		}
+		log.Debug().Msg("All dependencies are completed")
+	} else {
+		log.Debug().Msg("Task has no dependencies")
 	}
 
 	// Check if agent is already working on another task
@@ -92,7 +128,21 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 	}
 	defer tx.Rollback()
 
+	// Clear any existing agent assignment for this task if force is used or task is being reassigned
+	if s.Force || (currentAgentID.Valid && currentAgentID.Int64 != 0) {
+		log.Debug().Int("task_id", taskID).Bool("force", s.Force).Msg("Clearing existing agent assignment for task")
+		_, err = tx.ExecContext(ctx, `
+			UPDATE agents 
+			SET current_project_id = NULL, current_task_id = NULL, updated_at = CURRENT_TIMESTAMP
+			WHERE current_task_id = ?
+		`, taskID)
+		if err != nil {
+			return errors.Wrap(err, "failed to clear existing agent assignment")
+		}
+	}
+
 	// Assign task to agent and set status to in_progress
+	log.Debug().Int("agent_id", agentID).Int("task_id", taskID).Msg("Assigning task to agent")
 	_, err = tx.ExecContext(ctx, `
 		UPDATE tasks 
 		SET agent_id = ?, status = 'in_progress', started_at = CURRENT_TIMESTAMP
@@ -167,12 +217,17 @@ Assign a task to an agent and set it to in_progress status.
 The task must be in pending status to be assigned. The agent must not be currently 
 working on another task.
 
+Use --force to reassign a task that is already assigned to another agent.
+
 Examples:
   # Assign task by ID to agent by slug
   assign-task --agent=code-analyzer --task=1
   
   # Assign task by project/task slug to agent by slug
   assign-task --agent=code-analyzer --task=auth-analysis/gather-patterns
+  
+  # Force reassign a task from one agent to another
+  assign-task --agent=new-agent --task=1 --force
 		`),
 		// Define command flags
 		cmds.WithFlags(
@@ -187,6 +242,12 @@ Examples:
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Task ID or project_slug/task_slug to assign"),
 				parameters.WithRequired(true),
+			),
+			parameters.NewParameterDefinition(
+				"force",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Force reassignment even if task is already assigned to another agent"),
+				parameters.WithDefault(false),
 			),
 		),
 		// Add parameter layers

@@ -62,7 +62,7 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 
 	// Resolve project ID
 	log.Debug().Str("project", s.Project).Msg("Resolving project ID")
-	projectID, err := ResolveProjectID(db, s.Project)
+	projectID, err := ResolveProjectID(timeoutCtx, db, s.Project)
 	if err != nil {
 		return errors.Wrap(err, "failed to resolve project")
 	}
@@ -72,7 +72,7 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 	var agentID int
 	if s.Agent != "" {
 		log.Debug().Str("agent", s.Agent).Msg("Resolving agent ID")
-		agentID, err = ResolveAgentID(db, s.Agent)
+		agentID, err = ResolveAgentID(timeoutCtx, db, s.Agent)
 		if err != nil {
 			return errors.Wrap(err, "failed to resolve agent")
 		}
@@ -147,7 +147,7 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 		log.Debug().Interface("dependencies", s.Dependencies).Msg("Processing dependencies")
 		for _, parentIdentifier := range s.Dependencies {
 			log.Debug().Str("parent_identifier", parentIdentifier).Msg("Resolving dependency task ID")
-			parentID, err := ResolveTaskID(timeoutCtx, db, parentIdentifier)
+			parentID, err := ResolveTaskID(timeoutCtx, tx, parentIdentifier)
 			if err != nil {
 				return errors.Wrapf(err, "failed to resolve dependency task: %s", parentIdentifier)
 			}

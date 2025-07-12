@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"io"
 	"os"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -193,7 +193,7 @@ func getContentPreview(content string, maxLength int) string {
 }
 
 // getLinkedLocations retrieves the location IDs linked to a report
-func getLinkedLocations(ctx context.Context, db *sql.DB, reportID int64) ([]int, error) {
+func getLinkedLocations(ctx context.Context, db *sqlx.DB, reportID int64) ([]int, error) {
 	query := `
 		SELECT location_id
 		FROM report_locations

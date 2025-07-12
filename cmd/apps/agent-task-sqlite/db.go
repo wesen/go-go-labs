@@ -9,9 +9,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 )
+
+// DBQuerier interface that both *sql.DB and *sql.Tx implement
+type DBQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
 
 // GetDatabasePath returns the database path from environment or default
 func GetDatabasePath() string {
@@ -22,7 +29,7 @@ func GetDatabasePath() string {
 }
 
 // InitDatabase creates and initializes the database with schema
-func InitDatabase() (*sql.DB, error) {
+func InitDatabase() (*sqlx.DB, error) {
 	dbPath := GetDatabasePath()
 	
 	// Create directory if it doesn't exist
@@ -31,7 +38,7 @@ func InitDatabase() (*sql.DB, error) {
 	}
 
 	// Open database connection with busy timeout for locking
-	db, err := sql.Open("sqlite3", dbPath+"?_busy_timeout=30000")
+	db, err := sqlx.Open("sqlite3", dbPath+"?_busy_timeout=30000")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open database")
 	}
@@ -42,13 +49,13 @@ func InitDatabase() (*sql.DB, error) {
 	db.SetConnMaxLifetime(time.Hour)
 
 	// Test connection with retry logic
-	if err := pingWithRetry(db, 10, time.Second); err != nil {
+	if err := pingWithRetry(db.DB, 10, time.Second); err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "failed to ping database")
 	}
 
 	// Create schema
-	if err := createSchema(db); err != nil {
+	if err := createSchema(db.DB); err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "failed to create schema")
 	}
@@ -198,7 +205,7 @@ func GenerateSlug(text string) string {
 }
 
 // EnsureUniqueSlug ensures a slug is unique by appending a counter if needed
-func EnsureUniqueSlug(db *sql.DB, table, slug string) (string, error) {
+func EnsureUniqueSlug(db *sqlx.DB, table, slug string) (string, error) {
 	originalSlug := slug
 	counter := 1
 	
@@ -219,10 +226,10 @@ func EnsureUniqueSlug(db *sql.DB, table, slug string) (string, error) {
 }
 
 // ResolveProjectID resolves a project identifier (ID or slug) to an ID
-func ResolveProjectID(db *sql.DB, identifier string) (int, error) {
+func ResolveProjectID(ctx context.Context, db DBQuerier, identifier string) (int, error) {
 	// Try to parse as integer first
 	var id int
-	err := db.QueryRow("SELECT id FROM projects WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
+	err := db.QueryRowContext(ctx, "SELECT id FROM projects WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, errors.Errorf("project not found: %s", identifier)
@@ -233,10 +240,10 @@ func ResolveProjectID(db *sql.DB, identifier string) (int, error) {
 }
 
 // ResolveAgentID resolves an agent identifier (ID or slug) to an ID
-func ResolveAgentID(db *sql.DB, identifier string) (int, error) {
+func ResolveAgentID(ctx context.Context, db DBQuerier, identifier string) (int, error) {
 	// Try to parse as integer first
 	var id int
-	err := db.QueryRow("SELECT id FROM agents WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
+	err := db.QueryRowContext(ctx, "SELECT id FROM agents WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, errors.Errorf("agent not found: %s", identifier)
@@ -247,7 +254,7 @@ func ResolveAgentID(db *sql.DB, identifier string) (int, error) {
 }
 
 // ResolveTaskID resolves a task identifier (ID or project_slug/task_slug) to an ID
-func ResolveTaskID(ctx context.Context, db *sql.DB, identifier string) (int, error) {
+func ResolveTaskID(ctx context.Context, db DBQuerier, identifier string) (int, error) {
 	// Check if it contains a slash (project/task format)
 	if strings.Contains(identifier, "/") {
 		parts := strings.SplitN(identifier, "/", 2)
