@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { RootState } from './store/store'
+import { RootState } from './store/store.ts'
 import { 
   setConnected, 
   addMessage, 
@@ -8,10 +8,10 @@ import {
   addWidgetToMessage, 
   setTyping,
   ChatMessage as ChatMessageType
-} from './store/chatSlice'
-import ChatMessage from './components/ChatMessage'
-import WidgetRenderer from './components/WidgetRenderer'
-import TypingIndicator from './components/TypingIndicator'
+} from './store/chatSlice.ts'
+import ChatMessage from './components/ChatMessage.tsx'
+import WidgetRenderer from './components/WidgetRenderer.tsx'
+import TypingIndicator from './components/TypingIndicator.tsx'
 
 function App() {
   const dispatch = useDispatch()

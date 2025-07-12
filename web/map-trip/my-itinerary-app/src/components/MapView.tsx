@@ -3,8 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import L from 'leaflet';
 import type { Map as LeafletMap, Marker as LeafletMarker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';  // Import Leaflet CSS for markers and controls
-import type { RootState } from '../store/store';
-import { setView } from '../store/mapSlice';
+import type { RootState } from '../store/store.ts';
+import { setView } from '../store/mapSlice.ts';
 
 const MapView: React.FC = () => {
   const dispatch = useDispatch();

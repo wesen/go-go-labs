@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChatMessage as ChatMessageType } from '../store/chatSlice'
+import { ChatMessage as ChatMessageType } from '../store/chatSlice.ts'
 
 interface Props {
   message: ChatMessageType

@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { WidgetList } from './WidgetList';
-import { handlers } from '../mocks/handlers';
+import { WidgetList } from './WidgetList.tsx';
+import { handlers } from '../mocks/handlers.ts';
 import { http, HttpResponse, delay } from 'msw';
-import type { Widget } from '../services/widgetsApi';
+import type { Widget } from '../services/widgetsApi.ts';
 
 // Add a decorator for styling context
 const withStyleWrapper = (Story: any) => (

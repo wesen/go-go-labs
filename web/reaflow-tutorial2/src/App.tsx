@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Canvas, Node, Edge, NodeChildProps, ElkCanvasLayoutOptions } from 'reaflow';
 import './App.css';
-import { CustomNode } from './CustomNode'; // Import the new component
-import { nodeConfig } from './nodeConfig'; // Import node config
+import { CustomNode } from './CustomNode.tsx'; // Import the new component
+import { nodeConfig } from './nodeConfig.ts'; // Import node config
 
 // Define an interface for our custom node data
 export interface MyNodeData {

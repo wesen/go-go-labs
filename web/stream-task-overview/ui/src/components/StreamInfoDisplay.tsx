@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Code, Users, Github, Check, ArrowRight, LogIn, LogOut } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { useAppSelector, useAppDispatch } from '../store/hooks.ts';
 import {
   setStreamInfo,
   toggleEditMode,
@@ -10,7 +10,7 @@ import {
   setNewActiveTopic,
   completeCurrentStep,
   makeStepActive
-} from '../store/slices/streamSlice';
+} from '../store/slices/streamSlice.ts';
 
 interface StreamInfo {
   title: string;

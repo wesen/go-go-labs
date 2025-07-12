@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { UIWidget, DropdownOption } from '../store/chatSlice'
+import { UIWidget, DropdownOption } from '../store/chatSlice.ts'
 
 interface Props {
   widget: UIWidget

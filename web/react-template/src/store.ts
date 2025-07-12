@@ -1,6 +1,6 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
-import { widgetsApi } from './services/widgetsApi';
-import featuredWidgetReducer from './features/featuredWidget/featuredWidgetSlice';
+import { widgetsApi } from './services/widgetsApi.ts';
+import featuredWidgetReducer from './features/featuredWidget/featuredWidgetSlice.ts';
 
 export const store = configureStore({
   reducer: {

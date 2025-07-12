@@ -11,7 +11,7 @@
         "resolveJsonModule": true /* Enable importing .json files */
     },
     "include": [
-        "server.ts"
+      "server.ts"
     ], /* Specifies a list of files to be included in the compilation. */
     "exclude": [
         "node_modules"

@@ -1,12 +1,12 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { FeaturedWidget } from './FeaturedWidget';
+import { FeaturedWidget } from './FeaturedWidget.tsx';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import featuredWidgetReducer, {
   setFeaturedWidget,
   setHighlight,
-} from '../features/featuredWidget/featuredWidgetSlice';
+} from '../features/featuredWidget/featuredWidgetSlice.ts';
 
 // Create a custom store setup function
 const createTestStore = (initialState?: any) => {

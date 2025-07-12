@@ -1,8 +1,8 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import type { RootState } from '../store/store';
-import { selectItinerary } from '../store/itinerarySlice';
-import { setView } from '../store/mapSlice';
+import type { RootState } from '../store/store.ts';
+import { selectItinerary } from '../store/itinerarySlice.ts';
+import { setView } from '../store/mapSlice.ts';
 
 const ItinerarySelector: React.FC = () => {
   const dispatch = useDispatch();

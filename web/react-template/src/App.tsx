@@ -1,5 +1,5 @@
 import React from 'react';
-import { WidgetManager } from './components/WidgetManager';
+import { WidgetManager } from './components/WidgetManager.tsx';
 import './App.css';
 
 function App() {

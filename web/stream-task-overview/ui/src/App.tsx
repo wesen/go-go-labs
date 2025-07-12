@@ -1,5 +1,5 @@
 import React from 'react';
-import StreamInfoDisplay from './components/StreamInfoDisplay';
+import StreamInfoDisplay from './components/StreamInfoDisplay.tsx';
 
 const App: React.FC = () => {
   return (

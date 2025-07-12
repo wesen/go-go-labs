@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import itineraryReducer from './itinerarySlice';
-import mapReducer from './mapSlice';
+import itineraryReducer from './itinerarySlice.ts';
+import mapReducer from './mapSlice.ts';
 
 export const store = configureStore({
   reducer: {

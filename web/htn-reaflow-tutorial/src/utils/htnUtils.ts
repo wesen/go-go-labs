@@ -1,4 +1,4 @@
-import { Task, NodeData, EdgeData } from "../types/htn";
+import { Task, NodeData, EdgeData } from "../types/htn.ts";
 
 export function generateGraphFromHTNVisible(
   task: Task,

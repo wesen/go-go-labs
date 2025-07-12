@@ -1,6 +1,6 @@
 import React from 'react';
-import { WidgetList } from './WidgetList';
-import { FeaturedWidget } from './FeaturedWidget';
+import { WidgetList } from './WidgetList.tsx';
+import { FeaturedWidget } from './FeaturedWidget.tsx';
 
 export const WidgetManager: React.FC = () => {
   return (

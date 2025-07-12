@@ -1,7 +1,7 @@
 import { Canvas, NodeData as ReaflowNodeData } from 'reaflow';
-import { NodeData } from '../types/htn';
-import { CustomNode } from './CustomNode';
-import { CustomEdge } from './CustomEdge';
+import { NodeData } from '../types/htn.ts';
+import { CustomNode } from './CustomNode.tsx';
+import { CustomEdge } from './CustomEdge.tsx';
 
 interface HTNGraphProps {
   nodes: NodeData[];

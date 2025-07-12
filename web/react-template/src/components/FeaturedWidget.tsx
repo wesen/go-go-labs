@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import type { RootState, AppDispatch } from '../store';
-import { toggleHighlight, clearFeaturedWidget } from '../features/featuredWidget/featuredWidgetSlice';
+import type { RootState, AppDispatch } from '../store.ts';
+import { toggleHighlight, clearFeaturedWidget } from '../features/featuredWidget/featuredWidgetSlice.ts';
 
 export const FeaturedWidget: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();

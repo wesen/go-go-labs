@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { HTNGraph } from './components/HTNGraph';
-import { generateGraphFromHTNVisible, examples } from './utils/htnUtils';
-import { Task, NodeData } from './types/htn';
+import { HTNGraph } from './components/HTNGraph.tsx';
+import { generateGraphFromHTNVisible, examples } from './utils/htnUtils.ts';
+import { Task, NodeData } from './types/htn.ts';
 import './App.css';
 
 function App() {

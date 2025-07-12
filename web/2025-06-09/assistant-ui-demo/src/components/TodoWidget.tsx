@@ -1,6 +1,6 @@
 import React from 'react'
 import { useDispatch } from 'react-redux'
-import { UIWidget, TodoItem, updateTodoItem } from '../store/chatSlice'
+import { UIWidget, TodoItem, updateTodoItem } from '../store/chatSlice.ts'
 
 interface Props {
   widget: UIWidget

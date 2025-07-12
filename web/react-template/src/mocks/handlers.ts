@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { Widget } from '../services/widgetsApi';
+import type { Widget } from '../services/widgetsApi.ts';
 
 const widgets: Widget[] = [
   { id: 1, name: 'Foo' },

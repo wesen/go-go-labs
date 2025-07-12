@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import './App.css';
-import MapView from './components/MapView';
-import ItinerarySelector from './components/ItinerarySelector';
-import { setItineraries } from './store/itinerarySlice';
-import { setView } from './store/mapSlice';
+import MapView from './components/MapView.tsx';
+import ItinerarySelector from './components/ItinerarySelector.tsx';
+import { setItineraries } from './store/itinerarySlice.ts';
+import { setView } from './store/mapSlice.ts';
 
 const App: React.FC = () => {
   const dispatch = useDispatch();

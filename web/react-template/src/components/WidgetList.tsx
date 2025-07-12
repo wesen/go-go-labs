@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { useGetWidgetsQuery } from '../services/widgetsApi';
-import { setFeaturedWidget } from '../features/featuredWidget/featuredWidgetSlice';
-import type { AppDispatch } from '../store';
+import { useGetWidgetsQuery } from '../services/widgetsApi.ts';
+import { setFeaturedWidget } from '../features/featuredWidget/featuredWidgetSlice.ts';
+import type { AppDispatch } from '../store.ts';
 
 export const WidgetList = () => {
   const { 

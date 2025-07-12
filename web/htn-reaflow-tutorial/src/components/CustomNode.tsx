@@ -1,5 +1,5 @@
 import { Node as ReaflowNode, NodeProps, NodeChildProps, NodeData as ReaflowNodeData } from 'reaflow';
-import { NodeData } from '../types/htn';
+import { NodeData } from '../types/htn.ts';
 
 // Define the props our custom node wrapper will receive
 // We expect Reaflow to pass the node data in the 'properties' prop

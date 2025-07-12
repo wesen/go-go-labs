@@ -1,8 +1,8 @@
 import React from 'react'
 import { useDispatch } from 'react-redux'
-import { UIWidget, TodoItem, DropdownOption, updateTodoItem } from '../store/chatSlice'
-import TodoWidget from './TodoWidget'
-import DropdownWidget from './DropdownWidget'
+import { UIWidget, TodoItem, DropdownOption, updateTodoItem } from '../store/chatSlice.ts'
+import TodoWidget from './TodoWidget.tsx'
+import DropdownWidget from './DropdownWidget.tsx'
 
 interface Props {
   widget: UIWidget

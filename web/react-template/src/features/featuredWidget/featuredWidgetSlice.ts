@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Widget } from '../../services/widgetsApi';
+import type { Widget } from '../../services/widgetsApi.ts';
 
 interface FeaturedWidgetState {
   widget: Widget | null;

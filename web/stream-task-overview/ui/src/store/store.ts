@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import streamReducer from './slices/streamSlice';
+import streamReducer from './slices/streamSlice.ts';
 
 export const store = configureStore({
   reducer: {

@@ -1,12 +1,12 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { WidgetManager } from './WidgetManager';
+import { WidgetManager } from './WidgetManager.tsx';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { widgetsApi } from '../services/widgetsApi';
-import featuredWidgetReducer, { featuredWidgetSlice } from '../features/featuredWidget/featuredWidgetSlice';
+import { widgetsApi } from '../services/widgetsApi.ts';
+import featuredWidgetReducer, { featuredWidgetSlice } from '../features/featuredWidget/featuredWidgetSlice.ts';
 import { http, HttpResponse, delay } from 'msw';
-import { RootState } from '../store';
+import { RootState } from '../store.ts';
 
 const rootReducer = {
   featuredWidget: featuredWidgetReducer,

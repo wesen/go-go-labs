@@ -1,7 +1,7 @@
 import React from 'react';
 import { NodeChildProps } from 'reaflow';
-import { MyNodeData } from './App';
-import { nodeConfig } from './nodeConfig';
+import { MyNodeData } from './App.tsx';
+import { nodeConfig } from './nodeConfig.ts';
 
 // Define node dimensions directly here or import if needed elsewhere
 const NODE_WIDTH = 260;
