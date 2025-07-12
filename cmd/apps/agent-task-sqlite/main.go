@@ -54,6 +54,7 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		NewListAgentsCommand,
 		NewAssignTaskCommand,
 		NewCompleteTaskCommand,
+		NewServeCommand,
 	}
 
 	for _, cmdFactory := range commands {
@@ -86,6 +87,8 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		case *AssignTaskCommand:
 			cmd = c
 		case *CompleteTaskCommand:
+			cmd = c
+		case *ServeCommand:
 			cmd = c
 		default:
 			fmt.Fprintf(os.Stderr, "Unknown command type: %T\n", cmdInterface)

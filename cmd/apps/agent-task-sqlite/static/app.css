@@ -1,0 +1,42 @@
+/* Custom styles for agent task dashboard */
+.card-metric { 
+    font-size: 2rem; 
+    font-weight: bold; 
+}
+
+.status-badge { 
+    font-size: 0.75rem; 
+}
+
+.agent-status { 
+    font-size: 0.8rem; 
+}
+
+.refresh-indicator { 
+    position: fixed; 
+    top: 20px; 
+    right: 20px; 
+    z-index: 1000; 
+}
+
+.spinning { 
+    animation: spin 1s linear infinite; 
+}
+
+@keyframes spin { 
+    from { transform: rotate(0deg); } 
+    to { transform: rotate(360deg); } 
+}
+
+.task-instructions {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .task-instructions {
+        max-width: 200px;
+    }
+}

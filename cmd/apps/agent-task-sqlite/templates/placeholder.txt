@@ -1,0 +1,1 @@
+# This is a placeholder file to allow the templates directory to be embedded
