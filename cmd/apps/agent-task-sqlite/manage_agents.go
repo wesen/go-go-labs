@@ -23,6 +23,7 @@ type CreateAgentSettings struct {
 	Name        string `glazed.parameter:"name"`
 	Description string `glazed.parameter:"description"`
 	Slug        string `glazed.parameter:"slug"`
+	Project     string `glazed.parameter:"project"`
 }
 
 // Ensure interface implementation
@@ -46,6 +47,12 @@ func (c *CreateAgentCommand) RunIntoGlazeProcessor(
 	}
 	defer db.Close()
 
+	// Resolve project ID
+	projectID, err := ResolveProjectID(ctx, db, s.Project)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve project")
+	}
+
 	// Generate slug if not provided
 	slug := s.Slug
 	if slug == "" {
@@ -60,9 +67,9 @@ func (c *CreateAgentCommand) RunIntoGlazeProcessor(
 
 	// Insert the agent
 	result, err := db.ExecContext(ctx, `
-		INSERT INTO agents (slug, name, description)
-		VALUES (?, ?, ?)
-	`, slug, s.Name, s.Description)
+		INSERT INTO agents (slug, name, description, current_project_id)
+		VALUES (?, ?, ?, ?)
+	`, slug, s.Name, s.Description, projectID)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert agent")
 	}
@@ -98,11 +105,12 @@ func NewCreateAgentCommand() (interface{}, error) {
 		cmds.WithLong(`
 Create a new agent in the database.
 
-Agents represent different AI assistants or workers that can be assigned to tasks.
+Agents represent different AI assistants or workers that can be assigned to tasks
+within a specific project.
 
 Examples:
-  # Create a new agent
-  create-agent --name="Code Analyzer" --description="Specialized in analyzing code patterns and architecture"
+  # Create a new agent for a project
+  create-agent --name="Code Analyzer" --description="Specialized in analyzing code patterns and architecture" --project=authentication-analysis
 		`),
 		// Define command flags
 		cmds.WithFlags(
@@ -116,6 +124,12 @@ Examples:
 				"description",
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Description of the agent's capabilities"),
+				parameters.WithRequired(true),
+			),
+			parameters.NewParameterDefinition(
+				"project",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Project slug or ID that this agent will work on"),
 				parameters.WithRequired(true),
 			),
 			parameters.NewParameterDefinition(

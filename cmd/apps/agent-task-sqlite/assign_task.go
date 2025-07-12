@@ -108,13 +108,19 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 		log.Debug().Msg("Task has no dependencies")
 	}
 
-	// Check if agent is already working on another task
+	// Check if agent is already working on another task and validate project assignment
 	var currentTaskID sql.NullInt64
+	var agentProjectID int
 	err = db.QueryRowContext(ctx, `
-		SELECT current_task_id FROM agents WHERE id = ?
-	`, agentID).Scan(&currentTaskID)
+		SELECT current_task_id, current_project_id FROM agents WHERE id = ?
+	`, agentID).Scan(&currentTaskID, &agentProjectID)
 	if err != nil {
 		return errors.Wrap(err, "failed to check agent current task")
+	}
+
+	// Validate that agent belongs to the same project as the task
+	if agentProjectID != projectID {
+		return errors.Errorf("agent belongs to project %d but task belongs to project %d", agentProjectID, projectID)
 	}
 
 	if currentTaskID.Valid {

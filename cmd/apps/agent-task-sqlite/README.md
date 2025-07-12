@@ -1,17 +1,20 @@
 # Agent Task SQLite
 
-A command-line tool for managing agent tasks, locations, and reports in SQLite. This tool provides a convenient interface for working with the agent task database, allowing you to organize analysis work through projects, assign tasks to agents, and track progress.
+A command-line tool for managing agent tasks, locations, and reports in SQLite. This tool provides a convenient interface for working with the agent task database, allowing you to organize analysis work through projects, assign tasks to agents, and track progress with dependency management.
 
 ## Features
 
 - **Project Management**: Create and organize work into projects with friendly slugs
-- **Agent Management**: Register agents and assign them to tasks with slug-based identification
+- **Agent Management**: Register agents tied to specific projects with slug-based identification
 - **Task Management**: Create, query, and track analysis tasks with dependencies using flexible identifiers
-- **Task Assignment**: Assign tasks to agents and automatically set them to in-progress
+- **Dependency Blocking**: Tasks with incomplete dependencies cannot be assigned until prerequisites are completed
+- **Task Assignment**: Assign tasks to agents with validation and force reassignment options
+- **Project-Agent Binding**: Agents are tied to specific projects and cannot work on tasks from other projects
 - **Location Tracking**: Store and manage code locations relevant to tasks
 - **Report Generation**: Create reports linked to tasks and locations
 - **Slug-based Identification**: Use human-friendly slugs instead of numeric IDs
 - **Database Locking**: Safe concurrent access with automatic retry logic
+- **Debug Logging**: Comprehensive debug logging for troubleshooting
 
 ## Installation
 
@@ -19,7 +22,7 @@ Build the tool from source:
 
 ```bash
 cd go-go-labs
-go build -o cmd/apptask-manager/agent-task-sqlite ./cmd/apps/agent-task-sqlite
+go build -o task-manager ./cmd/apps/agent-task-sqlite
 ```
 
 ## Database Configuration
@@ -65,32 +68,38 @@ task-manager list-projects
 task-manager list-projects --project=authentication-analysis
 ```
 
-### 2. Registering Agents
+### 2. Registering Agents (Project-Specific)
 
-Create agents that will work on tasks:
+Create agents that will work on tasks within a specific project:
 
 ```bash
-# Create a code analysis agent (slug auto-generated)
+# Create a code analysis agent for the authentication project
 task-manager create-agent \
   --name="Code Analyzer" \
-  --description="Specialized in analyzing code patterns and architecture"
+  --description="Specialized in analyzing code patterns and architecture" \
+  --project=authentication-analysis
 
-# Create an oracle analysis agent with custom slug
+# Create an oracle analysis agent for the authentication project with custom slug
 task-manager create-agent \
   --name="Oracle Analyst" \
   --description="Performs deep analysis and generates insights from gathered data" \
+  --project=authentication-analysis \
   --slug="oracle"
 
-# List all agents
-task-manager list-agents
+# Create a database expert for the database security project  
+task-manager create-agent \
+  --name="Database Expert" \
+  --description="Database analysis specialist" \
+  --project=db-security \
+  --slug="db-expert"
 
-# Show specific agent by slug
-task-manager list-agents --agent=code-analyzer
+# List all agents (shows project assignments)
+task-manager list-agents
 ```
 
-### 3. Creating Tasks
+### 3. Creating Tasks with Dependencies
 
-Create tasks within your project:
+Create tasks within your project and set up dependency relationships:
 
 ```bash
 # Create a gather task using project slug
@@ -99,46 +108,82 @@ task-manager insert-task \
   --type=gather_information \
   --instructions="Gather all authentication-related code patterns from the main application"
 
-# Create an analysis task with agent assignment and dependencies
+# Create an analysis task with dependencies
 task-manager insert-task \
   --project=authentication-analysis \
-  --agent=oracle \
   --type=oracle_analysis \
   --instructions="Analyze gathered authentication patterns and identify security vulnerabilities" \
-  --dependencies=authentication-analysis/gather-all-authentication-related-code-patterns
+  --dependencies=1
 
+# Query tasks for a specific project
+task-manager query-tasks --project-id=1
+```
+
+### 4. Task Assignment with Validation
+
+Assign tasks to agents with automatic validation:
+
+```bash
 # Assign a pending task to an agent (sets status to in_progress)
 task-manager assign-task \
   --agent=code-analyzer \
-  --task=authentication-analysis/gather-all-authentication-related-code-patterns
+  --task=1
 
-# Query tasks for a specific project
-task-manager query-tasks --project=authentication-analysis
+# Try to assign task with incomplete dependencies (will fail)
+task-manager assign-task \
+  --agent=oracle \
+  --task=2
 
-# Query tasks assigned to a specific agent
-task-manager query-tasks --agent=code-analyzer
+# Expected error: Cannot assign task with incomplete dependencies
+
+# Complete the dependency first (or simulate completion)
+sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed' WHERE id=1;"
+
+# Now assign the analysis task (will succeed)
+task-manager assign-task \
+  --agent=oracle \
+  --task=2
+
+# Force reassign a task from one agent to another
+task-manager assign-task \
+  --agent=other-agent \
+  --task=2 \
+  --force
 ```
 
-### 4. Managing Code Locations
+### 5. Project-Agent Validation
+
+The system enforces that agents can only work on tasks from their assigned project:
+
+```bash
+# This will fail - agent from project 1 cannot work on project 2 task
+task-manager assign-task \
+  --agent=code-analyzer \
+  --task=db-security/gather-patterns
+
+# Expected error: Agent belongs to different project
+```
+
+### 6. Managing Code Locations
 
 Store relevant code locations for tasks:
 
 ```bash
-# Add individual location
+# Add individual location using task ID
 task-manager insert-locations \
   --task-id=1 \
   --location="src/auth/login.go" \
   --description="Main login function with password validation"
 
-# Add multiple locations at once
+# Add multiple locations at once using task slug
 task-manager insert-locations \
-  --task-id=1 \
+  --task=authentication-analysis/gather-patterns \
   --locations="src/auth/middleware.go:Authentication middleware" \
   --locations="src/auth/jwt.go:JWT token handling" \
   --locations="src/auth/session.go:Session management"
 ```
 
-### 5. Creating Reports
+### 7. Creating Reports
 
 Generate reports for completed analysis:
 
@@ -150,7 +195,7 @@ task-manager create-report \
 
 # Create a report from a file
 task-manager create-report \
-  --task-id=2 \
+  --task=authentication-analysis/analysis-task \
   --content-file="analysis-report.md"
 
 # Create a report linked to specific locations
@@ -160,7 +205,7 @@ task-manager create-report \
   --location-ids=1,2,3
 ```
 
-### 6. Querying and Filtering
+### 8. Querying and Filtering
 
 The tool provides powerful querying capabilities:
 
@@ -169,16 +214,36 @@ The tool provides powerful querying capabilities:
 task-manager query-tasks --status=pending
 
 # Show tasks assigned to a specific agent
-task-manager query-tasks --agent=code-analyzer
+task-manager query-tasks --agent-id=1
 
-# Show tasks for a project with dependencies
-task-manager query-tasks --project=authentication-analysis --show-deps
+# Show tasks for a project
+task-manager query-tasks --project-id=1
+
+# Show tasks with dependencies (may timeout due to known issue)
+task-manager query-tasks --show-deps
 
 # Show last 10 completed tasks
 task-manager query-tasks --status=completed --limit=10
 
-# Show specific task details by project/task slug
-task-manager query-tasks --task=authentication-analysis/analyze-patterns --show-deps
+# Show specific task details
+task-manager query-tasks --task-id=5
+```
+
+### 9. Debug Logging
+
+Use debug logging to troubleshoot issues:
+
+```bash
+# Enable debug logging for assignment operations
+task-manager --log-level=debug assign-task \
+  --agent=code-analyzer \
+  --task=1
+
+# Debug output shows:
+# - Dependency checking process
+# - Project validation
+# - Agent availability checks
+# - Transaction operations
 ```
 
 ## Output Formats
@@ -202,67 +267,87 @@ task-manager query-tasks --output=table
 task-manager query-tasks --fields=id,type,status,instructions
 ```
 
-## Workflow Example
+## Complete Workflow Example
 
-Here's a complete workflow example:
+Here's a complete workflow example demonstrating all features:
 
 ```bash
 # 1. Create a project
 task-manager create-project \
-  --name="Database Security Audit" \
-  --description="Comprehensive security audit of database access patterns" \
-  --slug="db-security"
+  --name="API Security Review" \
+  --description="Review API endpoints for security vulnerabilities" \
+  --slug="api-security"
 
-# 2. Register agents
+# 2. Register project-specific agents
 task-manager create-agent \
-  --name="Security Scanner" \
-  --description="Automated security pattern detection" \
-  --slug="security-scanner"
+  --name="Code Gatherer" \
+  --description="Collects API endpoint information" \
+  --project=api-security \
+  --slug="gatherer"
+
+task-manager create-agent \
+  --name="Security Analyst" \
+  --description="Analyzes API security patterns" \
+  --project=api-security \
+  --slug="analyst"
 
 # 3. Create initial gather task
 task-manager insert-task \
-  --project=db-security \
+  --project=api-security \
   --type=gather_information \
-  --instructions="Collect all database query patterns and access controls" \
-  --slug="gather-db-patterns"
+  --instructions="Collect all API endpoint definitions and security configurations" \
+  --slug="gather-apis"
 
-# 4. Assign task to agent
+# 4. Assign gather task
 task-manager assign-task \
-  --agent=security-scanner \
-  --task=db-security/gather-db-patterns
+  --agent=gatherer \
+  --task=api-security/gather-apis
 
-# 5. Add code locations
+# 5. Add code locations during gathering
 task-manager insert-locations \
-  --task=db-security/gather-db-patterns \
-  --locations="src/db/queries.go:Database query functions" \
-  --locations="src/db/migrations/:Database schema migrations" \
-  --locations="src/middleware/auth.go:Database access authorization"
+  --task=api-security/gather-apis \
+  --locations="src/api/routes.go:API route definitions" \
+  --locations="src/middleware/security.go:Security middleware"
 
-# 6. Create analysis task
+# 6. Create analysis task with dependency
 task-manager insert-task \
-  --project=db-security \
+  --project=api-security \
   --type=oracle_analysis \
-  --instructions="Analyze database access patterns for security vulnerabilities" \
-  --dependencies=db-security/gather-db-patterns \
-  --slug="analyze-security"
+  --instructions="Analyze API security patterns and identify vulnerabilities" \
+  --dependencies=api-security/gather-apis \
+  --slug="analyze-api-security"
 
-# 7. Generate report
+# 7. Try to assign analysis task (will fail due to incomplete dependency)
+task-manager assign-task \
+  --agent=analyst \
+  --task=api-security/analyze-api-security
+
+# Expected error: Dependency not completed
+
+# 8. Complete the gather task
+sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE slug='gather-apis';"
+
+# 9. Now assign analysis task (will succeed)
+task-manager assign-task \
+  --agent=analyst \
+  --task=api-security/analyze-api-security
+
+# 10. Generate report
 task-manager create-report \
-  --task=db-security/analyze-security \
-  --content="Database security audit complete. Found SQL injection vulnerabilities in user input handling." \
-  --location-ids=1,2
+  --task=api-security/analyze-api-security \
+  --content="API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points."
 
-# 8. Review results
-task-manager query-tasks --project=db-security --show-deps --output=json
+# 11. Review complete workflow
+task-manager query-tasks --project-id=1 --output=json
 ```
 
 ## Database Schema
 
 The tool uses the following database schema:
 
-- **projects**: Store project information
-- **agents**: Store agent descriptions and capabilities
-- **tasks**: Store tasks with project/agent assignments and dependencies
+- **projects**: Store project information with unique slugs
+- **agents**: Store agent descriptions tied to specific projects
+- **tasks**: Store tasks with project/agent assignments and dependencies  
 - **task_dependencies**: Track task dependency relationships
 - **gathered_locations**: Store code locations relevant to tasks
 - **reports**: Store analysis reports
@@ -271,44 +356,55 @@ The tool uses the following database schema:
 
 ## Advanced Features
 
+### Dependency Management
+
+Tasks can depend on other tasks, creating a dependency graph:
+- Tasks with incomplete dependencies cannot be assigned until prerequisites are completed
+- Dependencies are validated during assignment with clear error messages
+- Supports both numeric IDs and project_slug/task_slug format for dependencies
+- Debug logging shows dependency checking process
+
+### Task Assignment Validation
+
+Tasks can be assigned to agents with comprehensive validation:
+- Only agents from the same project can be assigned to tasks
+- Agents can only work on one task at a time
+- Tasks with incomplete dependencies cannot be assigned
+- Assignment automatically updates task status to in_progress
+- Use `--force` flag to reassign tasks with proper cleanup
+
+### Project-Agent Binding
+
+All agents are tied to specific projects:
+- Agents must be created with a --project parameter
+- Agents cannot be assigned to tasks from different projects
+- Project validation is enforced even with --force reassignment
+- Clear error messages for project mismatches
+
 ### Database Locking
 
 The tool handles database locking automatically with:
 - 30-second busy timeout
-- Automatic retry logic
+- Automatic retry logic  
 - Single connection pool for SQLite compatibility
-
-### Task Dependencies
-
-Tasks can depend on other tasks, creating a dependency graph:
-- Tasks with dependencies cannot be started until prerequisites are complete
-- Use `--show-deps` flag to visualize dependencies
-- Supports complex dependency chains
-- Dependencies can be specified by ID or project_slug/task_slug format
-
-### Task Assignment
-
-Tasks can be assigned to agents, automatically setting them to in_progress:
-- Only pending tasks can be assigned
-- Agents can only work on one task at a time
-- Assignment automatically updates agent's current work tracking
-- Use `assign-task` command to assign tasks to agents
+- Transaction safety with rollback protection
 
 ### Slug-based Identification
 
 All entities support human-friendly slugs:
 - **Projects**: Use project slug instead of numeric ID
-- **Agents**: Use agent slug for easy identification
+- **Agents**: Use agent slug for easy identification  
 - **Tasks**: Use project_slug/task_slug format for clear references
 - Slugs are auto-generated from names but can be customized
 
-### Flexible Location Storage
+### Debug Logging
 
-Code locations are stored as flexible text references:
-- File paths: `src/auth/login.go`
-- Function names: `AuthenticateUser`
-- Line ranges: `main.go:10-20`
-- Any reference format that makes sense for your workflow
+Comprehensive debug logging available:
+- Use --log-level=debug for detailed operation logs
+- Shows dependency validation process
+- Traces assignment operations step-by-step
+- Logs project validation and agent availability checks
+- Helpful for troubleshooting assignment failures
 
 ## Help and Documentation
 
@@ -322,6 +418,7 @@ task-manager --help
 task-manager insert-task --help
 task-manager query-tasks --help
 task-manager assign-task --help
+task-manager create-agent --help
 task-manager create-report --help
 ```
 
@@ -329,6 +426,47 @@ task-manager create-report --help
 
 - `AGENT_SQLITE_DB`: Path to SQLite database file (default: `/tmp/agent-work.db`)
 
+## Known Issues
+
+1. **--show-deps timeout**: The `--show-deps` flag may cause timeouts due to transaction handling issues
+2. **Manual status updates**: Some test scenarios require manual status updates via SQLite commands
+
+## Troubleshooting
+
+### Common Error Messages
+
+1. **"cannot assign task: dependency task X is not completed"**
+   - Solution: Complete the dependency task first or check task status
+
+2. **"agent belongs to project X but task belongs to project Y"**  
+   - Solution: Use an agent from the correct project or create a new agent
+
+3. **"task is already assigned to agent X (use --force to reassign)"**
+   - Solution: Use --force flag to reassign or choose a different agent
+
+4. **"agent is already assigned to task X"**
+   - Solution: Wait for current task completion or use a different agent
+
+### Debug Commands
+
+```bash
+# Check task dependencies
+task-manager --log-level=debug assign-task --agent=agent-slug --task=task-id
+
+# Check database state
+sqlite3 /tmp/agent-work.db "SELECT * FROM tasks WHERE id = X;"
+sqlite3 /tmp/agent-work.db "SELECT * FROM task_dependencies WHERE task_id = X;"
+
+# Verify agent-project assignments  
+task-manager list-agents
+```
+
 ## Contributing
 
-This tool is part of the go-go-labs project. Feel free to submit issues and enhancement requests! 
+This tool is part of the go-go-labs project. Feel free to submit issues and enhancement requests!
+
+Key areas for contribution:
+- Fix --show-deps timeout issue
+- Add task completion commands
+- Implement agent step tracking
+- Add more sophisticated dependency visualization

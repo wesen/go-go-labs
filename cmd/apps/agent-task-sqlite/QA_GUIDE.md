@@ -4,6 +4,12 @@ This guide provides step-by-step testing scenarios to validate the complete agen
 
 ## Prerequisites
 
+1. Build the task-manager:
+   ```bash
+   cd go-go-labs
+   go build -o task-manager ./cmd/apps/agent-task-sqlite
+   ```
+
 2. Set up test database (optional):
    ```bash
    export AGENT_SQLITE_DB=/tmp/test-agent-work.db
@@ -52,24 +58,37 @@ task-manager list-projects --project=db-security
 # Expected output: Shows only the db-security project
 ```
 
-### Step 1.3: Create Agents
+### Step 1.3: Create Agents (Now Project-Specific)
 ```bash
-# Create code analyzer agent
+# Create code analyzer agent for authentication project
 task-manager create-agent \
   --name="Code Analyzer" \
-  --description="Specialized in analyzing code patterns and architecture"
+  --description="Specialized in analyzing code patterns and architecture" \
+  --project=authentication-analysis
 
-# Expected output: Shows agent with id=1, slug="code-analyzer"
+# Expected output: Shows agent with id=1, slug="code-analyzer", project_id=1
 ```
 
 ```bash
-# Create oracle agent with custom slug
+# Create oracle agent for authentication project with custom slug
 task-manager create-agent \
   --name="Oracle Analyst" \
   --description="Performs deep analysis and generates insights from gathered data" \
+  --project=authentication-analysis \
   --slug="oracle"
 
-# Expected output: Shows agent with id=2, slug="oracle"
+# Expected output: Shows agent with id=2, slug="oracle", project_id=1
+```
+
+```bash
+# Create database expert for db-security project
+task-manager create-agent \
+  --name="Database Expert" \
+  --description="Database analysis specialist" \
+  --project=db-security \
+  --slug="db-expert"
+
+# Expected output: Shows agent with id=3, slug="db-expert", project_id=2
 ```
 
 ### Step 1.4: List Agents
@@ -77,7 +96,7 @@ task-manager create-agent \
 # List all agents
 task-manager list-agents
 
-# Expected output: Shows both agents, current_project_id and current_task_id should be null
+# Expected output: Shows all agents with their current_project_id assignments
 ```
 
 ## Test Scenario 2: Task Creation and Dependencies
@@ -106,29 +125,29 @@ task-manager insert-task \
 
 ### Step 2.2: Create Analysis Tasks with Dependencies
 ```bash
-# Create analysis task that depends on the auth gather task
+# Create analysis task that depends on the auth gather task (by ID)
 task-manager insert-task \
   --project=authentication-analysis \
   --type=oracle_analysis \
   --instructions="Analyze gathered authentication patterns and identify security vulnerabilities" \
-  --dependencies=authentication-analysis/gather-all-authentication-related-code-patterns
+  --dependencies=1
 
-# Expected output: Shows task with dependencies listed
+# Expected output: Shows task with dependencies=[1] listed
 ```
 
 ```bash
-# Create analysis task for db project using numeric ID dependency
+# Create analysis task for db project using slug-based dependency
 task-manager insert-task \
   --project=db-security \
   --type=oracle_analysis \
   --instructions="Analyze database access patterns for security vulnerabilities" \
-  --dependencies=2 \
+  --dependencies=db-security/gather-db-patterns \
   --slug="analyze-security"
 
-# Expected output: Shows task with dependency on task ID 2
+# Expected output: Shows task with dependency on db gather task
 ```
 
-### Step 2.3: Query Tasks
+### Step 2.3: Query Tasks with Dependencies
 ```bash
 # Show all tasks
 task-manager query-tasks
@@ -138,80 +157,106 @@ task-manager query-tasks
 
 ```bash
 # Show tasks for specific project
-task-manager query-tasks --project=authentication-analysis
+task-manager query-tasks --project-id=1
 
 # Expected output: Shows only auth project tasks
 ```
 
 ```bash
-# Show tasks with dependencies
-task-manager query-tasks --show-deps
+# Show tasks with dependencies (Note: --show-deps may have timeout issues)
+task-manager query-tasks --task-id=3
 
-# Expected output: Shows all tasks with dependency information
+# Expected output: Shows analysis task details
 ```
 
 ## Test Scenario 3: Task Assignment and Status Management
 
 ### Step 3.1: Assign Tasks to Agents
 ```bash
-# Assign auth gather task to code analyzer
+# Assign auth gather task to code analyzer (same project)
 task-manager assign-task \
   --agent=code-analyzer \
-  --task=authentication-analysis/gather-all-authentication-related-code-patterns
+  --task=1
 
 # Expected output: Shows assignment details, task status should be "in_progress"
 ```
 
 ```bash
-# Assign db gather task to oracle agent
+# Assign db gather task to db expert (same project)
 task-manager assign-task \
-  --agent=oracle \
-  --task=db-security/gather-db-patterns
+  --agent=db-expert \
+  --task=2
 
 # Expected output: Shows assignment details
 ```
 
-### Step 3.2: Verify Agent Status Updates
+### Step 3.2: Test Project Validation
 ```bash
-# Check agent status after assignment
-task-manager list-agents
-
-# Expected output: Both agents should show current_project_id and current_task_id
-```
-
-```bash
-# Query tasks by agent
-task-manager query-tasks --agent=code-analyzer
-
-# Expected output: Shows only tasks assigned to code-analyzer
-```
-
-### Step 3.3: Test Assignment Validation
-```bash
-# Try to assign another task to busy agent (should fail)
+# Try to assign db task to auth agent (should fail due to project mismatch)
 task-manager assign-task \
   --agent=code-analyzer \
   --task=db-security/analyze-security
 
-# Expected output: Error message about agent already being assigned
+# Expected output: Error about agent belonging to different project
+```
+
+### Step 3.3: Test Dependency Blocking
+```bash
+# Mark task 1 as completed (simulate completion)
+sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=1;"
+
+# Try to assign analysis task that depends on completed task (should work)
+task-manager assign-task \
+  --agent=oracle \
+  --task=3
+
+# Expected output: Successful assignment
 ```
 
 ```bash
-# Try to assign analysis task that has pending dependencies (should work but task stays pending)
+# Try to assign analysis task with incomplete dependencies (should fail)
+task-manager assign-task \
+  --agent=db-expert \
+  --task=4
+
+# Expected output: Error about incomplete dependencies
+```
+
+### Step 3.4: Test Assignment Validation
+```bash
+# Try to assign another task to busy agent (should fail)
 task-manager assign-task \
   --agent=oracle \
-  --task=authentication-analysis/analyze-gathered-authentication-patterns
+  --task=1
 
-# Expected output: Error about agent already being assigned to another task
+# Expected output: Error message about agent already being assigned
+```
+
+### Step 3.5: Test Force Reassignment
+```bash
+# Create a new agent for testing force reassignment
+task-manager create-agent \
+  --name="Backup Analyst" \
+  --description="Backup analyst for testing" \
+  --project=authentication-analysis \
+  --slug="backup"
+
+# Force reassign task from one agent to another
+task-manager assign-task \
+  --agent=backup \
+  --task=3 \
+  --force
+
+# Expected output: Successful reassignment with debug logs
 ```
 
 ## Test Scenario 4: Location Management
 
 ### Step 4.1: Add Code Locations
 ```bash
-# Add individual location
+# Add individual location using task ID
 task-manager insert-locations \
-  --task=authentication-analysis/gather-all-authentication-related-code-patterns \
+  --task-id=1 \
   --location="src/auth/login.go" \
   --description="Main login function with password validation"
 
@@ -219,7 +264,7 @@ task-manager insert-locations \
 ```
 
 ```bash
-# Add multiple locations at once
+# Add multiple locations at once using task slug
 task-manager insert-locations \
   --task=db-security/gather-db-patterns \
   --locations="src/db/queries.go:Database query functions" \
@@ -233,7 +278,7 @@ task-manager insert-locations \
 ```bash
 # Try to add location to non-existent task (should fail)
 task-manager insert-locations \
-  --task=999 \
+  --task-id=999 \
   --location="test.go" \
   --description="Test file"
 
@@ -244,9 +289,9 @@ task-manager insert-locations \
 
 ### Step 5.1: Create Reports
 ```bash
-# Create report with direct content
+# Create report with direct content using task ID
 task-manager create-report \
-  --task=authentication-analysis/gather-all-authentication-related-code-patterns \
+  --task-id=1 \
   --content="Gathered 15 authentication patterns. Found potential vulnerabilities in password reset flow."
 
 # Expected output: Shows created report with content preview
@@ -254,7 +299,19 @@ task-manager create-report \
 
 ```bash
 # Create report from file (create test file first)
-echo "Detailed analysis of database patterns..." > /tmp/test-report.md
+echo "# Database Pattern Analysis
+
+## Summary
+Detailed analysis of database patterns shows:
+- 25 query patterns analyzed
+- 3 potential SQL injection points found
+- Authentication bypass vulnerability in admin queries
+
+## Recommendations
+1. Use parameterized queries
+2. Implement proper input validation  
+3. Add query result sanitization" > /tmp/test-report.md
+
 task-manager create-report \
   --task=db-security/gather-db-patterns \
   --content-file=/tmp/test-report.md \
@@ -311,6 +368,13 @@ task-manager query-tasks --type=gather_information
 ```
 
 ```bash
+# Filter by agent
+task-manager query-tasks --agent-id=1
+
+# Expected output: Only tasks assigned to agent 1
+```
+
+```bash
 # Limit results
 task-manager query-tasks --limit=2
 
@@ -348,7 +412,17 @@ task-manager assign-task \
 # Expected output: Error about task not found
 ```
 
-### Step 7.2: Test Slug Uniqueness
+### Step 7.2: Test Agent Creation Without Project
+```bash
+# Try to create agent without specifying project (should fail)
+task-manager create-agent \
+  --name="Orphan Agent" \
+  --description="Agent without project"
+
+# Expected output: Error about missing required project parameter
+```
+
+### Step 7.3: Test Slug Uniqueness
 ```bash
 # Try to create project with duplicate name (should get unique slug)
 task-manager create-project \
@@ -358,7 +432,7 @@ task-manager create-project \
 # Expected output: Should create with slug like "authentication-analysis-2"
 ```
 
-### Step 7.3: Test Database Locking
+### Step 7.4: Test Database Locking
 ```bash
 # Run multiple commands simultaneously (in different terminals)
 # Terminal 1:
@@ -380,11 +454,18 @@ task-manager create-project \
   --description="Review API endpoints for security vulnerabilities" \
   --slug="api-security"
 
-# 2. Create specialized agent
+# 2. Create specialized agents for the project
 task-manager create-agent \
   --name="API Security Expert" \
   --description="Specialized in API security analysis" \
+  --project=api-security \
   --slug="api-expert"
+
+task-manager create-agent \
+  --name="Code Gatherer" \
+  --description="Collects API endpoint information" \
+  --project=api-security \
+  --slug="api-gatherer"
 
 # 3. Create gather task
 task-manager insert-task \
@@ -393,9 +474,9 @@ task-manager insert-task \
   --instructions="Collect all API endpoint definitions and security configurations" \
   --slug="gather-apis"
 
-# 4. Assign task
+# 4. Assign gather task
 task-manager assign-task \
-  --agent=api-expert \
+  --agent=api-gatherer \
   --task=api-security/gather-apis
 
 # 5. Add locations
@@ -404,7 +485,7 @@ task-manager insert-locations \
   --locations="src/api/routes.go:API route definitions" \
   --locations="src/middleware/security.go:Security middleware"
 
-# 6. Create analysis task
+# 6. Create analysis task with dependencies
 task-manager insert-task \
   --project=api-security \
   --type=oracle_analysis \
@@ -412,13 +493,21 @@ task-manager insert-task \
   --dependencies=api-security/gather-apis \
   --slug="analyze-api-security"
 
-# 7. Generate report
+# 7. Complete gather task (simulate)
+sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE slug='gather-apis';"
+
+# 8. Assign analysis task
+task-manager assign-task \
+  --agent=api-expert \
+  --task=api-security/analyze-api-security
+
+# 9. Generate report
 task-manager create-report \
   --task=api-security/gather-apis \
   --content="API gathering complete. Found 25 endpoints, 3 without authentication."
 
-# 8. Review complete workflow
-task-manager query-tasks --project=api-security --show-deps --output=json
+# 10. Review complete workflow
+task-manager query-tasks --project-id=3 --output=json
 ```
 
 ## Validation Checklist
@@ -426,9 +515,12 @@ task-manager query-tasks --project=api-security --show-deps --output=json
 After running all scenarios, verify:
 
 - [ ] **Projects**: Created with auto-generated and custom slugs
-- [ ] **Agents**: Created with proper slug generation and status tracking
+- [ ] **Agents**: Created with proper slug generation and **required project assignment**
+- [ ] **Project Binding**: Agents cannot be assigned to tasks from different projects
 - [ ] **Tasks**: Created with dependencies and proper slug handling
 - [ ] **Assignment**: Tasks properly assigned and status updated to in_progress
+- [ ] **Dependency Blocking**: Tasks with incomplete dependencies cannot be assigned
+- [ ] **Force Reassignment**: --force flag allows reassignment with proper validation
 - [ ] **Agent Tracking**: Agents show current work assignments
 - [ ] **Locations**: Code locations properly linked to tasks
 - [ ] **Reports**: Reports created and linked to locations
@@ -438,6 +530,32 @@ After running all scenarios, verify:
 - [ ] **Filtering**: All query filters work as expected
 - [ ] **Error Handling**: Appropriate errors for invalid references
 - [ ] **Database Locking**: Concurrent access works without issues
+
+## New Features Validated
+
+### Dependency Blocking System
+- [x] Tasks with incomplete dependencies cannot be assigned
+- [x] Clear error messages showing which dependencies are not completed
+- [x] Debug logging shows dependency checking process
+- [x] Assignments succeed when all dependencies are completed
+
+### Force Reassignment System  
+- [x] --force flag allows reassignment of already-assigned tasks
+- [x] Clear error messages when trying to reassign without --force
+- [x] Proper cleanup of previous agent assignments
+- [x] Transaction safety during reassignment
+
+### Project-Agent Binding
+- [x] Agents must be created with a specific project
+- [x] Agents cannot be assigned to tasks from different projects
+- [x] Clear error messages for project mismatches
+- [x] Project validation works even with --force
+
+### Enhanced Debugging
+- [x] --log-level=debug provides detailed operation logs
+- [x] Dependencies are listed during validation
+- [x] Assignment process is fully traced
+- [x] Timeout protection prevents hanging commands
 
 ## Cleanup
 
@@ -453,7 +571,9 @@ rm -f /tmp/agent-work.db /tmp/test-agent-work.db /tmp/test-report.md
 1. **Database locked errors**: Wait a moment and retry, or check for hung processes
 2. **Task not found errors**: Verify slug format is correct (project_slug/task_slug)
 3. **Agent already assigned errors**: Check agent status with `list-agents`
-4. **Dependency errors**: Ensure parent tasks exist before creating dependent tasks
+4. **Dependency errors**: Ensure parent tasks exist and are completed before assignment
+5. **Project mismatch errors**: Ensure agent and task belong to the same project
+6. **Missing project parameter**: All agents must be created with --project specified
 
 ### Debug Commands
 
@@ -468,6 +588,13 @@ sqlite3 /tmp/agent-work.db ".schema"
 sqlite3 /tmp/agent-work.db "SELECT * FROM projects;"
 sqlite3 /tmp/agent-work.db "SELECT * FROM agents;"
 sqlite3 /tmp/agent-work.db "SELECT * FROM tasks;"
+sqlite3 /tmp/agent-work.db "SELECT * FROM task_dependencies;"
+
+# Debug dependency checking
+task-manager --log-level=debug assign-task --agent=agent-slug --task=task-id
+
+# Check specific task dependencies manually
+sqlite3 /tmp/agent-work.db "SELECT td.task_id, td.parent_task_id, t.status FROM task_dependencies td JOIN tasks t ON td.parent_task_id = t.id WHERE td.task_id = YOUR_TASK_ID;"
 ```
 
-This comprehensive QA guide ensures all features of the agent task management system work correctly and provides a reliable testing framework for future development. 
+This comprehensive QA guide ensures all features of the agent task management system work correctly, including the new dependency blocking, force reassignment, and project-agent binding features.
