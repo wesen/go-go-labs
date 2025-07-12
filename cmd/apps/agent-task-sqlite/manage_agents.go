@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -21,6 +22,7 @@ type CreateAgentCommand struct {
 type CreateAgentSettings struct {
 	Name        string `glazed.parameter:"name"`
 	Description string `glazed.parameter:"description"`
+	Slug        string `glazed.parameter:"slug"`
 }
 
 // Ensure interface implementation
@@ -44,11 +46,23 @@ func (c *CreateAgentCommand) RunIntoGlazeProcessor(
 	}
 	defer db.Close()
 
+	// Generate slug if not provided
+	slug := s.Slug
+	if slug == "" {
+		slug = GenerateSlug(s.Name)
+	}
+
+	// Ensure slug is unique
+	slug, err = EnsureUniqueSlug(db, "agents", slug)
+	if err != nil {
+		return errors.Wrap(err, "failed to ensure unique slug")
+	}
+
 	// Insert the agent
 	result, err := db.ExecContext(ctx, `
-		INSERT INTO agents (name, description)
-		VALUES (?, ?)
-	`, s.Name, s.Description)
+		INSERT INTO agents (slug, name, description)
+		VALUES (?, ?, ?)
+	`, slug, s.Name, s.Description)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert agent")
 	}
@@ -62,6 +76,7 @@ func (c *CreateAgentCommand) RunIntoGlazeProcessor(
 	// Output the created agent
 	row := types.NewRow(
 		types.MRP("id", agentID),
+		types.MRP("slug", slug),
 		types.MRP("name", s.Name),
 		types.MRP("description", s.Description),
 	)
@@ -103,6 +118,12 @@ Examples:
 				parameters.WithHelp("Description of the agent's capabilities"),
 				parameters.WithRequired(true),
 			),
+			parameters.NewParameterDefinition(
+				"slug",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("URL-friendly slug for the agent (auto-generated if not provided)"),
+				parameters.WithDefault(""),
+			),
 		),
 		// Add parameter layers
 		cmds.WithLayersList(
@@ -122,7 +143,7 @@ type ListAgentsCommand struct {
 
 // ListAgentsSettings holds the parameters for listing agents
 type ListAgentsSettings struct {
-	AgentID int `glazed.parameter:"agent-id"`
+	AgentID string `glazed.parameter:"agent"`
 }
 
 // Ensure interface implementation
@@ -148,16 +169,16 @@ func (c *ListAgentsCommand) RunIntoGlazeProcessor(
 
 	// Build query
 	query := `
-		SELECT id, name, description, created_at, updated_at
+		SELECT id, slug, name, description, current_project_id, current_task_id, created_at, updated_at
 		FROM agents
 		WHERE 1=1
 	`
 	args := []interface{}{}
 
 	// Add filters
-	if s.AgentID > 0 {
-		query += " AND id = ?"
-		args = append(args, s.AgentID)
+	if s.AgentID != "" {
+		query += " AND (id = ? OR slug = ?)"
+		args = append(args, s.AgentID, s.AgentID)
 	}
 
 	query += " ORDER BY created_at DESC"
@@ -172,9 +193,10 @@ func (c *ListAgentsCommand) RunIntoGlazeProcessor(
 	// Process results
 	for rows.Next() {
 		var id int
-		var name, description, createdAt, updatedAt string
+		var slug, name, description, createdAt, updatedAt string
+		var currentProjectID, currentTaskID sql.NullInt64
 
-		err := rows.Scan(&id, &name, &description, &createdAt, &updatedAt)
+		err := rows.Scan(&id, &slug, &name, &description, &currentProjectID, &currentTaskID, &createdAt, &updatedAt)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan agent row")
 		}
@@ -182,11 +204,20 @@ func (c *ListAgentsCommand) RunIntoGlazeProcessor(
 		// Create row data
 		rowData := types.NewRow(
 			types.MRP("id", id),
+			types.MRP("slug", slug),
 			types.MRP("name", name),
 			types.MRP("description", description),
 			types.MRP("created_at", createdAt),
 			types.MRP("updated_at", updatedAt),
 		)
+
+		// Add current work if assigned
+		if currentProjectID.Valid {
+			rowData.Set("current_project_id", currentProjectID.Int64)
+		}
+		if currentTaskID.Valid {
+			rowData.Set("current_task_id", currentTaskID.Int64)
+		}
 
 		if err := gp.AddRow(ctx, rowData); err != nil {
 			return errors.Wrap(err, "failed to add row")
@@ -214,16 +245,19 @@ Examples:
   # List all agents
   list-agents
   
-  # Show specific agent
-  list-agents --agent-id=1
+  # Show specific agent by ID
+  list-agents --agent=1
+  
+  # Show specific agent by slug
+  list-agents --agent=code-analyzer
 		`),
 		// Define command flags
 		cmds.WithFlags(
 			parameters.NewParameterDefinition(
-				"agent-id",
-				parameters.ParameterTypeInteger,
-				parameters.WithHelp("Show specific agent by ID"),
-				parameters.WithDefault(0),
+				"agent",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Show specific agent by ID or slug"),
+				parameters.WithDefault(""),
 			),
 		),
 		// Add parameter layers

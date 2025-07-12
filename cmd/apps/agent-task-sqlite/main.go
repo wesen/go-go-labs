@@ -6,9 +6,11 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -20,11 +22,25 @@ func main() {
 		
 This tool provides a convenient interface for working with the agent task database,
 allowing you to insert tasks, query their status, manage code locations, and create reports.`,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			err := logging.InitLoggerFromViper()
+			cobra.CheckErr(err)
+		},
 	}
 
 	// Initialize help system
 	helpSystem := help.NewHelpSystem()
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
+	// Add logging flags
+	err := logging.AddLoggingLayerToRootCommand(rootCmd, "agent-task-sqlite")
+	cobra.CheckErr(err)
+
+	err = viper.BindPFlags(rootCmd.PersistentFlags())
+	cobra.CheckErr(err)
+
+	err = logging.InitLoggerFromViper()
+	cobra.CheckErr(err)
 
 	// Create and add all commands
 	commands := []func() (interface{}, error){
@@ -36,6 +52,7 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		NewListProjectsCommand,
 		NewCreateAgentCommand,
 		NewListAgentsCommand,
+		NewAssignTaskCommand,
 	}
 
 	for _, cmdFactory := range commands {
@@ -64,6 +81,8 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		case *CreateAgentCommand:
 			cmd = c
 		case *ListAgentsCommand:
+			cmd = c
+		case *AssignTaskCommand:
 			cmd = c
 		default:
 			fmt.Fprintf(os.Stderr, "Unknown command type: %T\n", cmdInterface)

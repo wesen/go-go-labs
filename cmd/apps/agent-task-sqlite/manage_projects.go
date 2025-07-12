@@ -21,6 +21,7 @@ type CreateProjectCommand struct {
 type CreateProjectSettings struct {
 	Name        string `glazed.parameter:"name"`
 	Description string `glazed.parameter:"description"`
+	Slug        string `glazed.parameter:"slug"`
 }
 
 // Ensure interface implementation
@@ -44,11 +45,23 @@ func (c *CreateProjectCommand) RunIntoGlazeProcessor(
 	}
 	defer db.Close()
 
+	// Generate slug if not provided
+	slug := s.Slug
+	if slug == "" {
+		slug = GenerateSlug(s.Name)
+	}
+
+	// Ensure slug is unique
+	slug, err = EnsureUniqueSlug(db, "projects", slug)
+	if err != nil {
+		return errors.Wrap(err, "failed to ensure unique slug")
+	}
+
 	// Insert the project
 	result, err := db.ExecContext(ctx, `
-		INSERT INTO projects (name, description)
-		VALUES (?, ?)
-	`, s.Name, s.Description)
+		INSERT INTO projects (slug, name, description)
+		VALUES (?, ?, ?)
+	`, slug, s.Name, s.Description)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert project")
 	}
@@ -62,6 +75,7 @@ func (c *CreateProjectCommand) RunIntoGlazeProcessor(
 	// Output the created project
 	row := types.NewRow(
 		types.MRP("id", projectID),
+		types.MRP("slug", slug),
 		types.MRP("name", s.Name),
 		types.MRP("description", s.Description),
 	)
@@ -103,6 +117,12 @@ Examples:
 				parameters.WithHelp("Description of the project"),
 				parameters.WithRequired(true),
 			),
+			parameters.NewParameterDefinition(
+				"slug",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("URL-friendly slug for the project (auto-generated if not provided)"),
+				parameters.WithDefault(""),
+			),
 		),
 		// Add parameter layers
 		cmds.WithLayersList(
@@ -122,7 +142,7 @@ type ListProjectsCommand struct {
 
 // ListProjectsSettings holds the parameters for listing projects
 type ListProjectsSettings struct {
-	ProjectID int `glazed.parameter:"project-id"`
+	ProjectID string `glazed.parameter:"project"`
 }
 
 // Ensure interface implementation
@@ -148,16 +168,16 @@ func (c *ListProjectsCommand) RunIntoGlazeProcessor(
 
 	// Build query
 	query := `
-		SELECT id, name, description, created_at, updated_at
+		SELECT id, slug, name, description, created_at, updated_at
 		FROM projects
 		WHERE 1=1
 	`
 	args := []interface{}{}
 
 	// Add filters
-	if s.ProjectID > 0 {
-		query += " AND id = ?"
-		args = append(args, s.ProjectID)
+	if s.ProjectID != "" {
+		query += " AND (id = ? OR slug = ?)"
+		args = append(args, s.ProjectID, s.ProjectID)
 	}
 
 	query += " ORDER BY created_at DESC"
@@ -172,9 +192,9 @@ func (c *ListProjectsCommand) RunIntoGlazeProcessor(
 	// Process results
 	for rows.Next() {
 		var id int
-		var name, description, createdAt, updatedAt string
+		var slug, name, description, createdAt, updatedAt string
 
-		err := rows.Scan(&id, &name, &description, &createdAt, &updatedAt)
+		err := rows.Scan(&id, &slug, &name, &description, &createdAt, &updatedAt)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan project row")
 		}
@@ -182,6 +202,7 @@ func (c *ListProjectsCommand) RunIntoGlazeProcessor(
 		// Create row data
 		rowData := types.NewRow(
 			types.MRP("id", id),
+			types.MRP("slug", slug),
 			types.MRP("name", name),
 			types.MRP("description", description),
 			types.MRP("created_at", createdAt),
@@ -214,16 +235,19 @@ Examples:
   # List all projects
   list-projects
   
-  # Show specific project
-  list-projects --project-id=1
+  # Show specific project by ID
+  list-projects --project=1
+  
+  # Show specific project by slug
+  list-projects --project=auth-analysis
 		`),
 		// Define command flags
 		cmds.WithFlags(
 			parameters.NewParameterDefinition(
-				"project-id",
-				parameters.ParameterTypeInteger,
-				parameters.WithHelp("Show specific project by ID"),
-				parameters.WithDefault(0),
+				"project",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Show specific project by ID or slug"),
+				parameters.WithDefault(""),
 			),
 		),
 		// Add parameter layers

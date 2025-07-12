@@ -4,11 +4,13 @@ A command-line tool for managing agent tasks, locations, and reports in SQLite. 
 
 ## Features
 
-- **Project Management**: Create and organize work into projects
-- **Agent Management**: Register agents and assign them to tasks
-- **Task Management**: Create, query, and track analysis tasks with dependencies
+- **Project Management**: Create and organize work into projects with friendly slugs
+- **Agent Management**: Register agents and assign them to tasks with slug-based identification
+- **Task Management**: Create, query, and track analysis tasks with dependencies using flexible identifiers
+- **Task Assignment**: Assign tasks to agents and automatically set them to in-progress
 - **Location Tracking**: Store and manage code locations relevant to tasks
 - **Report Generation**: Create reports linked to tasks and locations
+- **Slug-based Identification**: Use human-friendly slugs instead of numeric IDs
 - **Database Locking**: Safe concurrent access with automatic retry logic
 
 ## Installation
@@ -34,7 +36,7 @@ The tool provides several commands organized around the core entities:
 
 - **Projects**: `create-project`, `list-projects`
 - **Agents**: `create-agent`, `list-agents`
-- **Tasks**: `insert-task`, `query-tasks`
+- **Tasks**: `insert-task`, `query-tasks`, `assign-task`
 - **Locations**: `insert-locations`
 - **Reports**: `create-report`
 
@@ -45,13 +47,22 @@ The tool provides several commands organized around the core entities:
 First, create a project to organize your work:
 
 ```bash
-# Create a new project
+# Create a new project (slug auto-generated from name)
 ./agent-task-sqlite create-project \
   --name="Authentication Analysis" \
   --description="Analyze authentication patterns and security implementations across the codebase"
 
+# Create a project with custom slug
+./agent-task-sqlite create-project \
+  --name="Database Security Audit" \
+  --description="Comprehensive security audit of database access patterns" \
+  --slug="db-security"
+
 # List all projects
 ./agent-task-sqlite list-projects
+
+# Show specific project by slug
+./agent-task-sqlite list-projects --project=authentication-analysis
 ```
 
 ### 2. Registering Agents
@@ -59,18 +70,22 @@ First, create a project to organize your work:
 Create agents that will work on tasks:
 
 ```bash
-# Create a code analysis agent
+# Create a code analysis agent (slug auto-generated)
 ./agent-task-sqlite create-agent \
   --name="Code Analyzer" \
   --description="Specialized in analyzing code patterns and architecture"
 
-# Create an oracle analysis agent
+# Create an oracle analysis agent with custom slug
 ./agent-task-sqlite create-agent \
   --name="Oracle Analyst" \
-  --description="Performs deep analysis and generates insights from gathered data"
+  --description="Performs deep analysis and generates insights from gathered data" \
+  --slug="oracle"
 
 # List all agents
 ./agent-task-sqlite list-agents
+
+# Show specific agent by slug
+./agent-task-sqlite list-agents --agent=code-analyzer
 ```
 
 ### 3. Creating Tasks
@@ -78,22 +93,30 @@ Create agents that will work on tasks:
 Create tasks within your project:
 
 ```bash
-# Create a gather task (assuming project ID 1)
+# Create a gather task using project slug
 ./agent-task-sqlite insert-task \
-  --project-id=1 \
+  --project=authentication-analysis \
   --type=gather_information \
   --instructions="Gather all authentication-related code patterns from the main application"
 
-# Create an analysis task that depends on the gather task (assuming task ID 1)
+# Create an analysis task with agent assignment and dependencies
 ./agent-task-sqlite insert-task \
-  --project-id=1 \
-  --agent-id=2 \
+  --project=authentication-analysis \
+  --agent=oracle \
   --type=oracle_analysis \
   --instructions="Analyze gathered authentication patterns and identify security vulnerabilities" \
-  --dependencies=1
+  --dependencies=authentication-analysis/gather-all-authentication-related-code-patterns
+
+# Assign a pending task to an agent (sets status to in_progress)
+./agent-task-sqlite assign-task \
+  --agent=code-analyzer \
+  --task=authentication-analysis/gather-all-authentication-related-code-patterns
 
 # Query tasks for a specific project
-./agent-task-sqlite query-tasks --project-id=1
+./agent-task-sqlite query-tasks --project=authentication-analysis
+
+# Query tasks assigned to a specific agent
+./agent-task-sqlite query-tasks --agent=code-analyzer
 ```
 
 ### 4. Managing Code Locations
@@ -146,16 +169,16 @@ The tool provides powerful querying capabilities:
 ./agent-task-sqlite query-tasks --status=pending
 
 # Show tasks assigned to a specific agent
-./agent-task-sqlite query-tasks --agent-id=1
+./agent-task-sqlite query-tasks --agent=code-analyzer
 
 # Show tasks for a project with dependencies
-./agent-task-sqlite query-tasks --project-id=1 --show-deps
+./agent-task-sqlite query-tasks --project=authentication-analysis --show-deps
 
 # Show last 10 completed tasks
 ./agent-task-sqlite query-tasks --status=completed --limit=10
 
-# Show specific task details
-./agent-task-sqlite query-tasks --task-id=5 --show-deps
+# Show specific task details by project/task slug
+./agent-task-sqlite query-tasks --task=authentication-analysis/analyze-patterns --show-deps
 ```
 
 ## Output Formats
@@ -187,42 +210,50 @@ Here's a complete workflow example:
 # 1. Create a project
 ./agent-task-sqlite create-project \
   --name="Database Security Audit" \
-  --description="Comprehensive security audit of database access patterns"
+  --description="Comprehensive security audit of database access patterns" \
+  --slug="db-security"
 
 # 2. Register agents
 ./agent-task-sqlite create-agent \
   --name="Security Scanner" \
-  --description="Automated security pattern detection"
+  --description="Automated security pattern detection" \
+  --slug="security-scanner"
 
 # 3. Create initial gather task
 ./agent-task-sqlite insert-task \
-  --project-id=1 \
+  --project=db-security \
   --type=gather_information \
-  --instructions="Collect all database query patterns and access controls"
+  --instructions="Collect all database query patterns and access controls" \
+  --slug="gather-db-patterns"
 
-# 4. Add code locations
+# 4. Assign task to agent
+./agent-task-sqlite assign-task \
+  --agent=security-scanner \
+  --task=db-security/gather-db-patterns
+
+# 5. Add code locations
 ./agent-task-sqlite insert-locations \
-  --task-id=1 \
+  --task=db-security/gather-db-patterns \
   --locations="src/db/queries.go:Database query functions" \
   --locations="src/db/migrations/:Database schema migrations" \
   --locations="src/middleware/auth.go:Database access authorization"
 
-# 5. Create analysis task
+# 6. Create analysis task
 ./agent-task-sqlite insert-task \
-  --project-id=1 \
-  --agent-id=1 \
+  --project=db-security \
   --type=oracle_analysis \
   --instructions="Analyze database access patterns for security vulnerabilities" \
-  --dependencies=1
+  --dependencies=db-security/gather-db-patterns \
+  --slug="analyze-security"
 
-# 6. Generate report
+# 7. Generate report
 ./agent-task-sqlite create-report \
-  --task-id=2 \
+  --task=db-security/analyze-security \
   --content="Database security audit complete. Found SQL injection vulnerabilities in user input handling." \
   --location-ids=1,2
 
-# 7. Review results
-./agent-task-sqlite query-tasks --project-id=1 --show-deps --output=json
+# 8. Review results
+./agent-task-sqlite query-tasks --project=db-security --show-deps --output=json
 ```
 
 ## Database Schema
@@ -253,6 +284,23 @@ Tasks can depend on other tasks, creating a dependency graph:
 - Tasks with dependencies cannot be started until prerequisites are complete
 - Use `--show-deps` flag to visualize dependencies
 - Supports complex dependency chains
+- Dependencies can be specified by ID or project_slug/task_slug format
+
+### Task Assignment
+
+Tasks can be assigned to agents, automatically setting them to in_progress:
+- Only pending tasks can be assigned
+- Agents can only work on one task at a time
+- Assignment automatically updates agent's current work tracking
+- Use `assign-task` command to assign tasks to agents
+
+### Slug-based Identification
+
+All entities support human-friendly slugs:
+- **Projects**: Use project slug instead of numeric ID
+- **Agents**: Use agent slug for easy identification
+- **Tasks**: Use project_slug/task_slug format for clear references
+- Slugs are auto-generated from names but can be customized
 
 ### Flexible Location Storage
 
@@ -273,6 +321,7 @@ Each command provides detailed help:
 # Command-specific help
 ./agent-task-sqlite insert-task --help
 ./agent-task-sqlite query-tasks --help
+./agent-task-sqlite assign-task --help
 ./agent-task-sqlite create-report --help
 ```
 

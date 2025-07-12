@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -72,6 +75,7 @@ func createSchema(db *sql.DB) error {
 -- Table for big picture projects
 CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -81,15 +85,21 @@ CREATE TABLE IF NOT EXISTS projects (
 -- Table for agent descriptions
 CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
+    current_project_id INTEGER,
+    current_task_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (current_project_id) REFERENCES projects(id),
+    FOREIGN KEY (current_task_id) REFERENCES tasks(id)
 );
 
 -- Tables for managing the dependency graph of analysis tasks
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL,
     project_id INTEGER NOT NULL,
     agent_id INTEGER,
     type TEXT NOT NULL CHECK(type IN ('gather_information', 'oracle_analysis')),
@@ -99,7 +109,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     started_at DATETIME,
     completed_at DATETIME,
     FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (agent_id) REFERENCES agents(id)
+    FOREIGN KEY (agent_id) REFERENCES agents(id),
+    UNIQUE(project_id, slug)
 );
 
 CREATE TABLE IF NOT EXISTS task_dependencies (
@@ -152,6 +163,10 @@ CREATE TABLE IF NOT EXISTS report_locations (
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_agent ON tasks(agent_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_slug ON tasks(slug);
+CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
+CREATE INDEX IF NOT EXISTS idx_agents_slug ON agents(slug);
+CREATE INDEX IF NOT EXISTS idx_agents_current_task ON agents(current_task_id);
 CREATE INDEX IF NOT EXISTS idx_steps_task ON agent_steps(task_id);
 CREATE INDEX IF NOT EXISTS idx_locations_task ON gathered_locations(task_id);
 CREATE INDEX IF NOT EXISTS idx_reports_task ON reports(task_id);
@@ -159,4 +174,113 @@ CREATE INDEX IF NOT EXISTS idx_reports_task ON reports(task_id);
 
 	_, err := db.Exec(schema)
 	return err
+}
+
+// GenerateSlug creates a URL-friendly slug from a string
+func GenerateSlug(text string) string {
+	// Convert to lowercase
+	slug := strings.ToLower(text)
+	
+	// Replace spaces and special characters with hyphens
+	reg := regexp.MustCompile(`[^a-z0-9]+`)
+	slug = reg.ReplaceAllString(slug, "-")
+	
+	// Remove leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+	
+	// Limit length
+	if len(slug) > 50 {
+		slug = slug[:50]
+		slug = strings.Trim(slug, "-")
+	}
+	
+	return slug
+}
+
+// EnsureUniqueSlug ensures a slug is unique by appending a counter if needed
+func EnsureUniqueSlug(db *sql.DB, table, slug string) (string, error) {
+	originalSlug := slug
+	counter := 1
+	
+	for {
+		var exists bool
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM "+table+" WHERE slug = ?)", slug).Scan(&exists)
+		if err != nil {
+			return "", err
+		}
+		
+		if !exists {
+			return slug, nil
+		}
+		
+		counter++
+		slug = originalSlug + "-" + string(rune('0'+counter-1))
+	}
+}
+
+// ResolveProjectID resolves a project identifier (ID or slug) to an ID
+func ResolveProjectID(db *sql.DB, identifier string) (int, error) {
+	// Try to parse as integer first
+	var id int
+	err := db.QueryRow("SELECT id FROM projects WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, errors.Errorf("project not found: %s", identifier)
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+// ResolveAgentID resolves an agent identifier (ID or slug) to an ID
+func ResolveAgentID(db *sql.DB, identifier string) (int, error) {
+	// Try to parse as integer first
+	var id int
+	err := db.QueryRow("SELECT id FROM agents WHERE id = ? OR slug = ?", identifier, identifier).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, errors.Errorf("agent not found: %s", identifier)
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+// ResolveTaskID resolves a task identifier (ID or project_slug/task_slug) to an ID
+func ResolveTaskID(ctx context.Context, db *sql.DB, identifier string) (int, error) {
+	// Check if it contains a slash (project/task format)
+	if strings.Contains(identifier, "/") {
+		parts := strings.SplitN(identifier, "/", 2)
+		if len(parts) != 2 {
+			return 0, errors.New("invalid task identifier format, use project_slug/task_slug")
+		}
+		
+		projectSlug := parts[0]
+		taskSlug := parts[1]
+		
+		var id int
+		err := db.QueryRowContext(ctx, `
+			SELECT t.id FROM tasks t
+			JOIN projects p ON t.project_id = p.id
+			WHERE p.slug = ? AND t.slug = ?
+		`, projectSlug, taskSlug).Scan(&id)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return 0, errors.Errorf("task not found: %s", identifier)
+			}
+			return 0, err
+		}
+		return id, nil
+	}
+	
+	// Try to parse as integer
+	var id int
+	err := db.QueryRowContext(ctx, "SELECT id FROM tasks WHERE id = ?", identifier).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, errors.Errorf("task not found: %s", identifier)
+		}
+		return 0, err
+	}
+	return id, nil
 } 
