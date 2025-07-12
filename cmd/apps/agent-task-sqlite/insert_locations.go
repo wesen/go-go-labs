@@ -65,7 +65,7 @@ func (c *InsertLocationsCommand) RunIntoGlazeProcessor(
 
 	// Parse locations
 	var locations []Location
-	
+
 	// If individual parameters are provided, use them
 	if s.Location != "" {
 		locations = append(locations, Location{
@@ -73,7 +73,7 @@ func (c *InsertLocationsCommand) RunIntoGlazeProcessor(
 			Description: s.Description,
 		})
 	}
-	
+
 	// Parse bulk locations if provided
 	for _, locStr := range s.Locations {
 		loc, err := parseLocationString(locStr)
@@ -215,4 +215,4 @@ Examples:
 	return &InsertLocationsCommand{
 		CommandDescription: cmdDesc,
 	}, nil
-} 
+}

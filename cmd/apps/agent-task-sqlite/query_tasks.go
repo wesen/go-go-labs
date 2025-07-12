@@ -21,13 +21,13 @@ type QueryTasksCommand struct {
 
 // QueryTasksSettings holds the parameters for querying tasks
 type QueryTasksSettings struct {
-	Status       string `glazed.parameter:"status"`
-	Type         string `glazed.parameter:"type"`
-	ProjectID    int    `glazed.parameter:"project-id"`
-	AgentID      int    `glazed.parameter:"agent-id"`
-	Limit        int    `glazed.parameter:"limit"`
-	ShowDeps     bool   `glazed.parameter:"show-deps"`
-	TaskID       int    `glazed.parameter:"task-id"`
+	Status    string `glazed.parameter:"status"`
+	Type      string `glazed.parameter:"type"`
+	ProjectID int    `glazed.parameter:"project-id"`
+	AgentID   int    `glazed.parameter:"agent-id"`
+	Limit     int    `glazed.parameter:"limit"`
+	ShowDeps  bool   `glazed.parameter:"show-deps"`
+	TaskID    int    `glazed.parameter:"task-id"`
 }
 
 // Ensure interface implementation
@@ -270,4 +270,4 @@ Examples:
 	return &QueryTasksCommand{
 		CommandDescription: cmdDesc,
 	}, nil
-} 
+}

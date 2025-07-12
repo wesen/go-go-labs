@@ -23,10 +23,10 @@ type CreateReportCommand struct {
 
 // CreateReportSettings holds the parameters for creating a report
 type CreateReportSettings struct {
-	TaskID      int      `glazed.parameter:"task-id"`
-	Content     string   `glazed.parameter:"content"`
-	ContentFile string   `glazed.parameter:"content-file"`
-	LocationIDs []int    `glazed.parameter:"location-ids"`
+	TaskID      int    `glazed.parameter:"task-id"`
+	Content     string `glazed.parameter:"content"`
+	ContentFile string `glazed.parameter:"content-file"`
+	LocationIDs []int  `glazed.parameter:"location-ids"`
 }
 
 // Ensure interface implementation
@@ -152,7 +152,7 @@ func (c *CreateReportCommand) RunIntoGlazeProcessor(
 // readContentFromFile reads content from a file, handling stdin if filename is "-"
 func readContentFromFile(filename string) (string, error) {
 	var reader io.Reader
-	
+
 	if filename == "-" {
 		reader = os.Stdin
 	} else {
@@ -177,18 +177,18 @@ func getContentPreview(content string, maxLength int) string {
 	// Replace newlines with spaces for preview
 	preview := strings.ReplaceAll(content, "\n", " ")
 	preview = strings.ReplaceAll(preview, "\r", " ")
-	
+
 	// Collapse multiple spaces
 	for strings.Contains(preview, "  ") {
 		preview = strings.ReplaceAll(preview, "  ", " ")
 	}
-	
+
 	preview = strings.TrimSpace(preview)
-	
+
 	if len(preview) <= maxLength {
 		return preview
 	}
-	
+
 	return preview[:maxLength-3] + "..."
 }
 
@@ -290,4 +290,4 @@ Examples:
 	return &CreateReportCommand{
 		CommandDescription: cmdDesc,
 	}, nil
-} 
+}

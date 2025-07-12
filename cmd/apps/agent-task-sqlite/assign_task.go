@@ -88,7 +88,7 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 	if err != nil {
 		return errors.Wrap(err, "failed to get task dependencies")
 	}
-	
+
 	if len(dependencies) > 0 {
 		log.Debug().Interface("dependencies", dependencies).Msg("Task has dependencies, checking completion status")
 		for _, depID := range dependencies {
@@ -98,7 +98,7 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 				return errors.Wrapf(err, "failed to check status of dependency task %d", depID)
 			}
 			log.Debug().Int("dependency_id", depID).Str("status", depStatus).Msg("Dependency status")
-			
+
 			if depStatus != "completed" {
 				return errors.Errorf("cannot assign task: dependency task %d is not completed (current status: %s)", depID, depStatus)
 			}
@@ -265,4 +265,4 @@ Examples:
 	return &AssignTaskCommand{
 		CommandDescription: cmdDesc,
 	}, nil
-} 
+}

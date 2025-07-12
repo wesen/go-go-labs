@@ -39,7 +39,7 @@ The tool provides several commands organized around the core entities:
 
 - **Projects**: `create-project`, `list-projects`
 - **Agents**: `create-agent`, `list-agents`
-- **Tasks**: `insert-task`, `query-tasks`, `assign-task`
+- **Tasks**: `insert-task`, `query-tasks`, `assign-task`, `complete-task`
 - **Locations**: `insert-locations`
 - **Reports**: `create-report`
 
@@ -136,8 +136,10 @@ task-manager assign-task \
 
 # Expected error: Cannot assign task with incomplete dependencies
 
-# Complete the dependency first (or simulate completion)
-sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed' WHERE id=1;"
+# Complete the dependency task using the complete-task command
+task-manager complete-task \
+  --task=1 \
+  --notes="Gathered authentication patterns from main application"
 
 # Now assign the analysis task (will succeed)
 task-manager assign-task \
@@ -151,7 +153,27 @@ task-manager assign-task \
   --force
 ```
 
-### 5. Project-Agent Validation
+### 5. Task Completion
+
+Complete tasks when work is finished:
+
+```bash
+# Complete a task with notes
+task-manager complete-task \
+  --task=1 \
+  --notes="Authentication patterns gathered. Found 15 code files with auth logic."
+
+# Complete a task using project/task slug
+task-manager complete-task \
+  --task=authentication-analysis/gather-patterns \
+  --notes="Comprehensive analysis complete. 3 security vulnerabilities identified."
+
+# Complete a task without notes
+task-manager complete-task \
+  --task=2
+```
+
+### 6. Project-Agent Validation
 
 The system enforces that agents can only work on tasks from their assigned project:
 
@@ -164,7 +186,7 @@ task-manager assign-task \
 # Expected error: Agent belongs to different project
 ```
 
-### 6. Managing Code Locations
+### 7. Managing Code Locations
 
 Store relevant code locations for tasks:
 
@@ -183,7 +205,7 @@ task-manager insert-locations \
   --locations="src/auth/session.go:Session management"
 ```
 
-### 7. Creating Reports
+### 8. Creating Reports
 
 Generate reports for completed analysis:
 
@@ -205,7 +227,7 @@ task-manager create-report \
   --location-ids=1,2,3
 ```
 
-### 8. Querying and Filtering
+### 9. Querying and Filtering
 
 The tool provides powerful querying capabilities:
 
@@ -229,7 +251,7 @@ task-manager query-tasks --status=completed --limit=10
 task-manager query-tasks --task-id=5
 ```
 
-### 9. Debug Logging
+### 10. Debug Logging
 
 Use debug logging to troubleshoot issues:
 
@@ -325,19 +347,26 @@ task-manager assign-task \
 # Expected error: Dependency not completed
 
 # 8. Complete the gather task
-sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE slug='gather-apis';"
+task-manager complete-task \
+  --task=api-security/gather-apis \
+  --notes="API gathering complete. Found 25 endpoints, documented security configurations"
 
 # 9. Now assign analysis task (will succeed)
 task-manager assign-task \
   --agent=analyst \
   --task=api-security/analyze-api-security
 
-# 10. Generate report
+# 10. Complete the analysis task
+task-manager complete-task \
+  --task=api-security/analyze-api-security \
+  --notes="API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points"
+
+# 11. Generate detailed report
 task-manager create-report \
   --task=api-security/analyze-api-security \
-  --content="API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points."
+  --content="Comprehensive API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points. Recommendations: implement OAuth2, use parameterized queries."
 
-# 11. Review complete workflow
+# 12. Review complete workflow
 task-manager query-tasks --project-id=1 --output=json
 ```
 
@@ -364,7 +393,7 @@ Tasks can depend on other tasks, creating a dependency graph:
 - Supports both numeric IDs and project_slug/task_slug format for dependencies
 - Debug logging shows dependency checking process
 
-### Task Assignment Validation
+### Task Assignment and Completion
 
 Tasks can be assigned to agents with comprehensive validation:
 - Only agents from the same project can be assigned to tasks
@@ -372,6 +401,12 @@ Tasks can be assigned to agents with comprehensive validation:
 - Tasks with incomplete dependencies cannot be assigned
 - Assignment automatically updates task status to in_progress
 - Use `--force` flag to reassign tasks with proper cleanup
+
+Tasks can be completed when work is finished:
+- Only tasks in 'in_progress' status can be completed
+- Completion automatically updates task status to 'completed'
+- Agent assignment is automatically cleared upon completion
+- Optional completion notes can be added to record results
 
 ### Project-Agent Binding
 
@@ -418,6 +453,7 @@ task-manager --help
 task-manager insert-task --help
 task-manager query-tasks --help
 task-manager assign-task --help
+task-manager complete-task --help
 task-manager create-agent --help
 task-manager create-report --help
 ```
@@ -436,7 +472,7 @@ task-manager create-report --help
 ### Common Error Messages
 
 1. **"cannot assign task: dependency task X is not completed"**
-   - Solution: Complete the dependency task first or check task status
+   - Solution: Complete the dependency task first using `complete-task` command or check task status
 
 2. **"agent belongs to project X but task belongs to project Y"**  
    - Solution: Use an agent from the correct project or create a new agent
@@ -445,7 +481,10 @@ task-manager create-report --help
    - Solution: Use --force flag to reassign or choose a different agent
 
 4. **"agent is already assigned to task X"**
-   - Solution: Wait for current task completion or use a different agent
+   - Solution: Complete the current task using `complete-task` or use a different agent
+
+5. **"task cannot be completed (current status: pending). Task must be in_progress to be completed"**
+   - Solution: Assign the task to an agent first using `assign-task` command
 
 ### Debug Commands
 
@@ -467,6 +506,6 @@ This tool is part of the go-go-labs project. Feel free to submit issues and enha
 
 Key areas for contribution:
 - Fix --show-deps timeout issue
-- Add task completion commands
 - Implement agent step tracking
 - Add more sophisticated dependency visualization
+- Add task pause/resume functionality

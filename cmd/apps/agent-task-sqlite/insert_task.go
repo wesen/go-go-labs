@@ -39,11 +39,11 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	log.Debug().Msg("Starting insert-task command")
-	
+
 	// Create a timeout context for the entire operation
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	// Parse settings
 	s := &InsertTaskSettings{}
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
@@ -96,12 +96,12 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 		if err != nil {
 			return errors.Wrap(err, "failed to check slug uniqueness")
 		}
-		
+
 		if !exists {
 			log.Debug().Str("final_slug", slug).Msg("Slug is unique")
 			break
 		}
-		
+
 		counter++
 		slug = originalSlug + "-" + string(rune('0'+counter-1))
 		log.Debug().Str("new_slug", slug).Int("counter", counter).Msg("Slug exists, trying new variant")
@@ -152,7 +152,7 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 				return errors.Wrapf(err, "failed to resolve dependency task: %s", parentIdentifier)
 			}
 			log.Debug().Int("parent_id", parentID).Msg("Dependency task ID resolved")
-			
+
 			_, err = tx.ExecContext(timeoutCtx, `
 				INSERT INTO task_dependencies (task_id, parent_task_id)
 				VALUES (?, ?)
@@ -266,4 +266,4 @@ Examples:
 	return &InsertTaskCommand{
 		CommandDescription: cmdDesc,
 	}, nil
-} 
+}

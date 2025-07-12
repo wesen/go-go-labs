@@ -31,7 +31,7 @@ func GetDatabasePath() string {
 // InitDatabase creates and initializes the database with schema
 func InitDatabase() (*sqlx.DB, error) {
 	dbPath := GetDatabasePath()
-	
+
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
 		return nil, errors.Wrap(err, "failed to create database directory")
@@ -58,6 +58,12 @@ func InitDatabase() (*sqlx.DB, error) {
 	if err := createSchema(db.DB); err != nil {
 		db.Close()
 		return nil, errors.Wrap(err, "failed to create schema")
+	}
+
+	// Run migrations for existing databases
+	if err := runMigrations(db.DB); err != nil {
+		db.Close()
+		return nil, errors.Wrap(err, "failed to run migrations")
 	}
 
 	return db, nil
@@ -112,6 +118,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     type TEXT NOT NULL CHECK(type IN ('gather_information', 'oracle_analysis')),
     status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed', 'failed')) DEFAULT 'pending',
     instructions TEXT NOT NULL,
+    completion_notes TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     started_at DATETIME,
     completed_at DATETIME,
@@ -183,24 +190,48 @@ CREATE INDEX IF NOT EXISTS idx_reports_task ON reports(task_id);
 	return err
 }
 
+// runMigrations handles database migrations for schema updates
+func runMigrations(db *sql.DB) error {
+	// Check if completion_notes column exists in tasks table
+	var hasColumn bool
+	err := db.QueryRow(`
+		SELECT COUNT(*) > 0 
+		FROM pragma_table_info('tasks') 
+		WHERE name = 'completion_notes'
+	`).Scan(&hasColumn)
+	if err != nil {
+		return errors.Wrap(err, "failed to check completion_notes column")
+	}
+
+	// Add completion_notes column if it doesn't exist
+	if !hasColumn {
+		_, err = db.Exec("ALTER TABLE tasks ADD COLUMN completion_notes TEXT")
+		if err != nil {
+			return errors.Wrap(err, "failed to add completion_notes column")
+		}
+	}
+
+	return nil
+}
+
 // GenerateSlug creates a URL-friendly slug from a string
 func GenerateSlug(text string) string {
 	// Convert to lowercase
 	slug := strings.ToLower(text)
-	
+
 	// Replace spaces and special characters with hyphens
 	reg := regexp.MustCompile(`[^a-z0-9]+`)
 	slug = reg.ReplaceAllString(slug, "-")
-	
+
 	// Remove leading/trailing hyphens
 	slug = strings.Trim(slug, "-")
-	
+
 	// Limit length
 	if len(slug) > 50 {
 		slug = slug[:50]
 		slug = strings.Trim(slug, "-")
 	}
-	
+
 	return slug
 }
 
@@ -208,18 +239,18 @@ func GenerateSlug(text string) string {
 func EnsureUniqueSlug(db *sqlx.DB, table, slug string) (string, error) {
 	originalSlug := slug
 	counter := 1
-	
+
 	for {
 		var exists bool
 		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM "+table+" WHERE slug = ?)", slug).Scan(&exists)
 		if err != nil {
 			return "", err
 		}
-		
+
 		if !exists {
 			return slug, nil
 		}
-		
+
 		counter++
 		slug = originalSlug + "-" + string(rune('0'+counter-1))
 	}
@@ -261,10 +292,10 @@ func ResolveTaskID(ctx context.Context, db DBQuerier, identifier string) (int, e
 		if len(parts) != 2 {
 			return 0, errors.New("invalid task identifier format, use project_slug/task_slug")
 		}
-		
+
 		projectSlug := parts[0]
 		taskSlug := parts[1]
-		
+
 		var id int
 		err := db.QueryRowContext(ctx, `
 			SELECT t.id FROM tasks t
@@ -279,7 +310,7 @@ func ResolveTaskID(ctx context.Context, db DBQuerier, identifier string) (int, e
 		}
 		return id, nil
 	}
-	
+
 	// Try to parse as integer
 	var id int
 	err := db.QueryRowContext(ctx, "SELECT id FROM tasks WHERE id = ?", identifier).Scan(&id)
@@ -290,4 +321,4 @@ func ResolveTaskID(ctx context.Context, db DBQuerier, identifier string) (int, e
 		return 0, err
 	}
 	return id, nil
-} 
+}

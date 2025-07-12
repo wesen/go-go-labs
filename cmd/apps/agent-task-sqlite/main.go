@@ -53,6 +53,7 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		NewCreateAgentCommand,
 		NewListAgentsCommand,
 		NewAssignTaskCommand,
+		NewCompleteTaskCommand,
 	}
 
 	for _, cmdFactory := range commands {
@@ -64,7 +65,7 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 
 		// Cast to the appropriate command interface
 		var cmd cmds.Command
-		
+
 		switch c := cmdInterface.(type) {
 		case *InsertTaskCommand:
 			cmd = c
@@ -83,6 +84,8 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		case *ListAgentsCommand:
 			cmd = c
 		case *AssignTaskCommand:
+			cmd = c
+		case *CompleteTaskCommand:
 			cmd = c
 		default:
 			fmt.Fprintf(os.Stderr, "Unknown command type: %T\n", cmdInterface)
@@ -103,4 +106,4 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-} 
+}

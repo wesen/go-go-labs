@@ -202,8 +202,12 @@ task-manager assign-task \
 
 ### Step 3.3: Test Dependency Blocking
 ```bash
-# Mark task 1 as completed (simulate completion)
-sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=1;"
+# Complete task 1 using the complete-task command
+task-manager complete-task \
+  --task=1 \
+  --notes="Authentication patterns gathered successfully"
+
+# Expected output: Task marked as completed, agent assignment cleared
 
 # Try to assign analysis task that depends on completed task (should work)
 task-manager assign-task \
@@ -285,7 +289,57 @@ task-manager insert-locations \
 # Expected output: Error about task not found
 ```
 
-## Test Scenario 5: Report Generation
+## Test Scenario 5: Task Completion
+
+### Step 5.1: Test Task Completion with Notes
+```bash
+# Try to complete a pending task (should fail)
+task-manager complete-task \
+  --task=2
+
+# Expected output: Error about task not being in_progress
+
+# Assign task 2 first
+task-manager complete-task \
+  --task=2 \
+  --notes="Database patterns analysis complete"
+
+# Expected output: Error because task 2 isn't assigned yet
+```
+
+### Step 5.2: Test Proper Task Completion Flow
+```bash
+# Complete task 2 that should be in progress (from dependency completion)
+sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=2;"
+
+# Create another task for completion testing
+task-manager insert-task \
+  --project=authentication-analysis \
+  --type=gather_information \
+  --instructions="Test task for completion workflow"
+
+# Assign the new task
+task-manager assign-task \
+  --agent=code-analyzer \
+  --task=5
+
+# Complete the task with notes
+task-manager complete-task \
+  --task=5 \
+  --notes="Test completion with detailed notes about the analysis results"
+
+# Expected output: Task completed successfully, agent assignment cleared
+```
+
+### Step 5.3: Test Completion Notes Storage
+```bash
+# Verify completion notes were stored
+task-manager query-tasks --task-id=5
+
+# Expected output: Should show completed status and completion notes
+```
+
+## Test Scenario 6: Report Generation
 
 ### Step 5.1: Create Reports
 ```bash
@@ -320,7 +374,7 @@ task-manager create-report \
 # Expected output: Shows report with linked locations
 ```
 
-## Test Scenario 6: Output Formats and Filtering
+## Test Scenario 7: Output Formats and Filtering
 
 ### Step 6.1: Test Different Output Formats
 ```bash
@@ -381,7 +435,7 @@ task-manager query-tasks --limit=2
 # Expected output: Maximum 2 tasks
 ```
 
-## Test Scenario 7: Error Handling and Edge Cases
+## Test Scenario 8: Error Handling and Edge Cases
 
 ### Step 7.1: Test Invalid References
 ```bash
@@ -444,7 +498,7 @@ task-manager list-projects &
 # Expected output: Both should complete successfully without locking issues
 ```
 
-## Test Scenario 8: Complete Workflow Validation
+## Test Scenario 9: Complete Workflow Validation
 
 ### Step 8.1: End-to-End Workflow
 ```bash
@@ -493,20 +547,27 @@ task-manager insert-task \
   --dependencies=api-security/gather-apis \
   --slug="analyze-api-security"
 
-# 7. Complete gather task (simulate)
-sqlite3 /tmp/agent-work.db "UPDATE tasks SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE slug='gather-apis';"
+# 7. Complete gather task using complete-task command
+task-manager complete-task \
+  --task=api-security/gather-apis \
+  --notes="API gathering complete. Found 25 endpoints, documented security configurations"
 
 # 8. Assign analysis task
 task-manager assign-task \
   --agent=api-expert \
   --task=api-security/analyze-api-security
 
-# 9. Generate report
-task-manager create-report \
-  --task=api-security/gather-apis \
-  --content="API gathering complete. Found 25 endpoints, 3 without authentication."
+# 9. Complete analysis task
+task-manager complete-task \
+  --task=api-security/analyze-api-security \
+  --notes="API security analysis complete. Found 3 vulnerable endpoints, 2 SQL injection risks"
 
-# 10. Review complete workflow
+# 10. Generate detailed report
+task-manager create-report \
+  --task=api-security/analyze-api-security \
+  --content="Comprehensive API security analysis. Found 3 endpoints without authentication, 2 potential SQL injection points. Recommendations: implement OAuth2, use parameterized queries."
+
+# 11. Review complete workflow
 task-manager query-tasks --project-id=3 --output=json
 ```
 
@@ -519,9 +580,10 @@ After running all scenarios, verify:
 - [ ] **Project Binding**: Agents cannot be assigned to tasks from different projects
 - [ ] **Tasks**: Created with dependencies and proper slug handling
 - [ ] **Assignment**: Tasks properly assigned and status updated to in_progress
+- [ ] **Completion**: Tasks can be completed with optional notes, status updated to completed
 - [ ] **Dependency Blocking**: Tasks with incomplete dependencies cannot be assigned
 - [ ] **Force Reassignment**: --force flag allows reassignment with proper validation
-- [ ] **Agent Tracking**: Agents show current work assignments
+- [ ] **Agent Tracking**: Agents show current work assignments, cleared on completion
 - [ ] **Locations**: Code locations properly linked to tasks
 - [ ] **Reports**: Reports created and linked to locations
 - [ ] **Slug Resolution**: All commands work with both IDs and slugs
@@ -551,10 +613,18 @@ After running all scenarios, verify:
 - [x] Clear error messages for project mismatches
 - [x] Project validation works even with --force
 
+### Task Completion System
+- [x] Tasks can only be completed when in 'in_progress' status
+- [x] Completion automatically updates status to 'completed'
+- [x] Agent assignments are cleared upon task completion
+- [x] Optional completion notes can be stored with completed tasks
+- [x] Clear error messages for invalid completion attempts
+
 ### Enhanced Debugging
 - [x] --log-level=debug provides detailed operation logs
 - [x] Dependencies are listed during validation
 - [x] Assignment process is fully traced
+- [x] Completion process is fully traced
 - [x] Timeout protection prevents hanging commands
 
 ## Cleanup
@@ -570,10 +640,11 @@ rm -f /tmp/agent-work.db /tmp/test-agent-work.db /tmp/test-report.md
 
 1. **Database locked errors**: Wait a moment and retry, or check for hung processes
 2. **Task not found errors**: Verify slug format is correct (project_slug/task_slug)
-3. **Agent already assigned errors**: Check agent status with `list-agents`
-4. **Dependency errors**: Ensure parent tasks exist and are completed before assignment
-5. **Project mismatch errors**: Ensure agent and task belong to the same project
-6. **Missing project parameter**: All agents must be created with --project specified
+3. **Agent already assigned errors**: Complete current task with `complete-task` or check agent status with `list-agents`
+4. **Task completion errors**: Ensure task is in 'in_progress' status before completing
+5. **Dependency errors**: Ensure parent tasks exist and are completed before assignment
+6. **Project mismatch errors**: Ensure agent and task belong to the same project
+7. **Missing project parameter**: All agents must be created with --project specified
 
 ### Debug Commands
 
@@ -593,8 +664,11 @@ sqlite3 /tmp/agent-work.db "SELECT * FROM task_dependencies;"
 # Debug dependency checking
 task-manager --log-level=debug assign-task --agent=agent-slug --task=task-id
 
+# Debug task completion
+task-manager --log-level=debug complete-task --task=task-id --notes="completion notes"
+
 # Check specific task dependencies manually
 sqlite3 /tmp/agent-work.db "SELECT td.task_id, td.parent_task_id, t.status FROM task_dependencies td JOIN tasks t ON td.parent_task_id = t.id WHERE td.task_id = YOUR_TASK_ID;"
 ```
 
-This comprehensive QA guide ensures all features of the agent task management system work correctly, including the new dependency blocking, force reassignment, and project-agent binding features.
+This comprehensive QA guide ensures all features of the agent task management system work correctly, including the new dependency blocking, force reassignment, task completion, and project-agent binding features.
