@@ -1,0 +1,87 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/help"
+	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+	"github.com/spf13/cobra"
+)
+
+func main() {
+	// Create root command
+	rootCmd := &cobra.Command{
+		Use:   "agent-task-sqlite",
+		Short: "Agent task database management tool",
+		Long: `A command-line tool for managing agent tasks, locations, and reports in SQLite.
+		
+This tool provides a convenient interface for working with the agent task database,
+allowing you to insert tasks, query their status, manage code locations, and create reports.`,
+	}
+
+	// Initialize help system
+	helpSystem := help.NewHelpSystem()
+	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
+	// Create and add all commands
+	commands := []func() (interface{}, error){
+		NewInsertTaskCommand,
+		NewQueryTasksCommand,
+		NewInsertLocationsCommand,
+		NewCreateReportCommand,
+		NewCreateProjectCommand,
+		NewListProjectsCommand,
+		NewCreateAgentCommand,
+		NewListAgentsCommand,
+	}
+
+	for _, cmdFactory := range commands {
+		cmdInterface, err := cmdFactory()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating command: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Cast to the appropriate command interface
+		var cmd cmds.Command
+		
+		switch c := cmdInterface.(type) {
+		case *InsertTaskCommand:
+			cmd = c
+		case *QueryTasksCommand:
+			cmd = c
+		case *InsertLocationsCommand:
+			cmd = c
+		case *CreateReportCommand:
+			cmd = c
+		case *CreateProjectCommand:
+			cmd = c
+		case *ListProjectsCommand:
+			cmd = c
+		case *CreateAgentCommand:
+			cmd = c
+		case *ListAgentsCommand:
+			cmd = c
+		default:
+			fmt.Fprintf(os.Stderr, "Unknown command type: %T\n", cmdInterface)
+			os.Exit(1)
+		}
+
+		// Convert to Cobra command
+		cobraCmd, err := cli.BuildCobraCommandFromCommand(cmd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error building command: %v\n", err)
+			os.Exit(1)
+		}
+
+		rootCmd.AddCommand(cobraCmd)
+	}
+
+	// Execute
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+} 

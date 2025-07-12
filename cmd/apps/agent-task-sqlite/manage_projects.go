@@ -1,0 +1,238 @@
+package main
+
+import (
+	"context"
+
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
+)
+
+// CreateProjectCommand creates a new project
+type CreateProjectCommand struct {
+	*cmds.CommandDescription
+}
+
+// CreateProjectSettings holds the parameters for creating a project
+type CreateProjectSettings struct {
+	Name        string `glazed.parameter:"name"`
+	Description string `glazed.parameter:"description"`
+}
+
+// Ensure interface implementation
+var _ cmds.GlazeCommand = &CreateProjectCommand{}
+
+func (c *CreateProjectCommand) RunIntoGlazeProcessor(
+	ctx context.Context,
+	parsedLayers *layers.ParsedLayers,
+	gp middlewares.Processor,
+) error {
+	// Parse settings
+	s := &CreateProjectSettings{}
+	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+		return errors.Wrap(err, "failed to parse settings")
+	}
+
+	// Initialize database
+	db, err := InitDatabase()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize database")
+	}
+	defer db.Close()
+
+	// Insert the project
+	result, err := db.ExecContext(ctx, `
+		INSERT INTO projects (name, description)
+		VALUES (?, ?)
+	`, s.Name, s.Description)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert project")
+	}
+
+	// Get the inserted project ID
+	projectID, err := result.LastInsertId()
+	if err != nil {
+		return errors.Wrap(err, "failed to get project ID")
+	}
+
+	// Output the created project
+	row := types.NewRow(
+		types.MRP("id", projectID),
+		types.MRP("name", s.Name),
+		types.MRP("description", s.Description),
+	)
+
+	return gp.AddRow(ctx, row)
+}
+
+func NewCreateProjectCommand() (interface{}, error) {
+	// Create the Glazed layer for output formatting
+	glazedLayer, err := settings.NewGlazedParameterLayers()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create command description
+	cmdDesc := cmds.NewCommandDescription(
+		"create-project",
+		cmds.WithShort("Create a new project"),
+		cmds.WithLong(`
+Create a new project in the database.
+
+Projects are used to organize tasks and provide context for analysis work.
+
+Examples:
+  # Create a new project
+  create-project --name="Authentication Analysis" --description="Analyze authentication patterns across the codebase"
+		`),
+		// Define command flags
+		cmds.WithFlags(
+			parameters.NewParameterDefinition(
+				"name",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Name of the project"),
+				parameters.WithRequired(true),
+			),
+			parameters.NewParameterDefinition(
+				"description",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Description of the project"),
+				parameters.WithRequired(true),
+			),
+		),
+		// Add parameter layers
+		cmds.WithLayersList(
+			glazedLayer,
+		),
+	)
+
+	return &CreateProjectCommand{
+		CommandDescription: cmdDesc,
+	}, nil
+}
+
+// ListProjectsCommand lists all projects
+type ListProjectsCommand struct {
+	*cmds.CommandDescription
+}
+
+// ListProjectsSettings holds the parameters for listing projects
+type ListProjectsSettings struct {
+	ProjectID int `glazed.parameter:"project-id"`
+}
+
+// Ensure interface implementation
+var _ cmds.GlazeCommand = &ListProjectsCommand{}
+
+func (c *ListProjectsCommand) RunIntoGlazeProcessor(
+	ctx context.Context,
+	parsedLayers *layers.ParsedLayers,
+	gp middlewares.Processor,
+) error {
+	// Parse settings
+	s := &ListProjectsSettings{}
+	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+		return errors.Wrap(err, "failed to parse settings")
+	}
+
+	// Initialize database
+	db, err := InitDatabase()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize database")
+	}
+	defer db.Close()
+
+	// Build query
+	query := `
+		SELECT id, name, description, created_at, updated_at
+		FROM projects
+		WHERE 1=1
+	`
+	args := []interface{}{}
+
+	// Add filters
+	if s.ProjectID > 0 {
+		query += " AND id = ?"
+		args = append(args, s.ProjectID)
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	// Execute query
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "failed to query projects")
+	}
+	defer rows.Close()
+
+	// Process results
+	for rows.Next() {
+		var id int
+		var name, description, createdAt, updatedAt string
+
+		err := rows.Scan(&id, &name, &description, &createdAt, &updatedAt)
+		if err != nil {
+			return errors.Wrap(err, "failed to scan project row")
+		}
+
+		// Create row data
+		rowData := types.NewRow(
+			types.MRP("id", id),
+			types.MRP("name", name),
+			types.MRP("description", description),
+			types.MRP("created_at", createdAt),
+			types.MRP("updated_at", updatedAt),
+		)
+
+		if err := gp.AddRow(ctx, rowData); err != nil {
+			return errors.Wrap(err, "failed to add row")
+		}
+	}
+
+	return rows.Err()
+}
+
+func NewListProjectsCommand() (interface{}, error) {
+	// Create the Glazed layer for output formatting
+	glazedLayer, err := settings.NewGlazedParameterLayers()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create command description
+	cmdDesc := cmds.NewCommandDescription(
+		"list-projects",
+		cmds.WithShort("List projects"),
+		cmds.WithLong(`
+List all projects in the database.
+
+Examples:
+  # List all projects
+  list-projects
+  
+  # Show specific project
+  list-projects --project-id=1
+		`),
+		// Define command flags
+		cmds.WithFlags(
+			parameters.NewParameterDefinition(
+				"project-id",
+				parameters.ParameterTypeInteger,
+				parameters.WithHelp("Show specific project by ID"),
+				parameters.WithDefault(0),
+			),
+		),
+		// Add parameter layers
+		cmds.WithLayersList(
+			glazedLayer,
+		),
+	)
+
+	return &ListProjectsCommand{
+		CommandDescription: cmdDesc,
+	}, nil
+} 
