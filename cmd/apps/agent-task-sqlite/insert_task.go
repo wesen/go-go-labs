@@ -171,6 +171,15 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 	}
 	log.Debug().Msg("Transaction committed successfully")
 
+	// Get project guidelines to display
+	var conciseGuidelines sql.NullString
+	err = db.QueryRowContext(ctx, `
+		SELECT concise_guidelines FROM projects WHERE id = ?
+	`, projectID).Scan(&conciseGuidelines)
+	if err != nil {
+		log.Warn().Err(err).Int("project_id", projectID).Msg("Failed to get project guidelines")
+	}
+
 	// Output the created task
 	row := types.NewRow(
 		types.MRP("id", taskID),
@@ -181,7 +190,13 @@ func (c *InsertTaskCommand) RunIntoGlazeProcessor(
 		types.MRP("instructions", s.Instructions),
 		types.MRP("status", "pending"),
 		types.MRP("dependencies", s.Dependencies),
+		types.MRP("reminder", "Don't forget to assign the task before starting to work on it."),
 	)
+
+	// Add project guidelines if available
+	if conciseGuidelines.Valid && conciseGuidelines.String != "" {
+		row.Set("project_guidelines", conciseGuidelines.String)
+	}
 
 	return gp.AddRow(ctx, row)
 }

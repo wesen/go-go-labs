@@ -47,12 +47,14 @@ type DashboardData struct {
 }
 
 type ProjectView struct {
-	ID          int       `json:"id" db:"id"`
-	Slug        string    `json:"slug" db:"slug"`
-	Name        string    `json:"name" db:"name"`
-	Description string    `json:"description" db:"description"`
-	TaskCount   int       `json:"task_count" db:"task_count"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	ID                int       `json:"id" db:"id"`
+	Slug              string    `json:"slug" db:"slug"`
+	Name              string    `json:"name" db:"name"`
+	Description       string    `json:"description" db:"description"`
+	ConciseGuidelines *string   `json:"concise_guidelines" db:"concise_guidelines"`
+	FullGuidelines    *string   `json:"full_guidelines" db:"full_guidelines"`
+	TaskCount         int       `json:"task_count" db:"task_count"`
+	CreatedAt         time.Time `json:"created_at" db:"created_at"`
 }
 
 type AgentView struct {
@@ -102,6 +104,7 @@ type TaskDetailData struct {
 	Dependents   []TaskView       `json:"dependents"`
 	Locations    []LocationView   `json:"locations"`
 	Reports      []ReportView     `json:"reports"`
+	Notes        []NoteView       `json:"notes"`
 	Steps        []StepView       `json:"steps"`
 	UpdatedAt    time.Time        `json:"updated_at"`
 }
@@ -138,6 +141,14 @@ type ReportView struct {
 	Content   string         `json:"content" db:"content"`
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`
 	Locations []LocationView `json:"locations,omitempty"`
+}
+
+type NoteView struct {
+	ID        int       `json:"id" db:"id"`
+	TaskID    int       `json:"task_id" db:"task_id"`
+	Type      string    `json:"type" db:"type"`
+	Content   string    `json:"content" db:"content"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
 type StepView struct {
@@ -535,11 +546,11 @@ func (s *ServeCommand) getDashboardData() (*DashboardData, error) {
 
 func (s *ServeCommand) getProjects() ([]ProjectView, error) {
 	query := `
-		SELECT p.id, p.slug, p.name, p.description, p.created_at,
+		SELECT p.id, p.slug, p.name, p.description, p.concise_guidelines, p.full_guidelines, p.created_at,
 		       COUNT(t.id) as task_count
 		FROM projects p
 		LEFT JOIN tasks t ON p.id = t.project_id
-		GROUP BY p.id, p.slug, p.name, p.description, p.created_at
+		GROUP BY p.id, p.slug, p.name, p.description, p.concise_guidelines, p.full_guidelines, p.created_at
 		ORDER BY p.created_at DESC
 	`
 
@@ -851,6 +862,12 @@ func (s *ServeCommand) getTaskDetailData(taskIDStr string) (*TaskDetailData, err
 		return nil, err
 	}
 
+	// Get notes
+	notes, err := s.getTaskNotes(taskID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get steps
 	steps, err := s.getTaskSteps(taskID)
 	if err != nil {
@@ -863,6 +880,7 @@ func (s *ServeCommand) getTaskDetailData(taskIDStr string) (*TaskDetailData, err
 		Dependents:   dependents,
 		Locations:    locations,
 		Reports:      reports,
+		Notes:        notes,
 		Steps:        steps,
 		UpdatedAt:    time.Now(),
 	}, nil
@@ -982,6 +1000,19 @@ func (s *ServeCommand) resolveProjectID(projectSlug string) (int, error) {
 	query := "SELECT id FROM projects WHERE slug = ?"
 	err := s.db.QueryRow(query, projectSlug).Scan(&projectID)
 	return projectID, err
+}
+
+func (s *ServeCommand) getTaskNotes(taskID int) ([]NoteView, error) {
+	query := `
+		SELECT id, task_id, type, content, created_at
+		FROM task_notes
+		WHERE task_id = ?
+		ORDER BY created_at DESC
+	`
+
+	var notes []NoteView
+	err := s.db.Select(&notes, query, taskID)
+	return notes, err
 }
 
 func (s *ServeCommand) getTaskSteps(taskID int) ([]StepView, error) {
@@ -1130,9 +1161,10 @@ func (s *ServeCommand) renderTaskDetailPage(w http.ResponseWriter, data *TaskDet
 
 	statusBadge := s.getStatusBadge(data.Task.Status)
 
-	// Enhanced task detail page with locations and reports
+	// Enhanced task detail page with locations, reports, and notes
 	locationsHTML := s.buildLocationsHTML(data.Locations)
 	reportsHTML := s.buildReportsHTML(data.Reports)
+	notesHTML := s.buildNotesHTML(data.Notes)
 	dependenciesHTML := s.buildDependenciesHTML(data.Dependencies)
 	dependentsHTML := s.buildDependentsHTML(data.Dependents)
 
@@ -1205,6 +1237,38 @@ func (s *ServeCommand) renderTaskDetailPage(w http.ResponseWriter, data *TaskDet
             <div class="col-md-6">%s</div>
             <div class="col-md-6">%s</div>
         </div>
+        <!-- Notes -->
+        <div class="row mb-4">
+            <div class="col-12">%s</div>
+        </div>
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="showTakeNoteModal()">
+                                <i class="bi bi-sticky"></i> Take Note
+                            </button>
+                            <button type="button" class="btn btn-outline-success" onclick="showWriteReportModal()" %s>
+                                <i class="bi bi-file-text"></i> Write Report
+                            </button>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info" onclick="refreshPage()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <a href="/project/%s/reports" class="btn btn-outline-secondary">
+                                <i class="bi bi-folder"></i> Project Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -1225,13 +1289,32 @@ func (s *ServeCommand) renderTaskDetailPage(w http.ResponseWriter, data *TaskDet
         const style = document.createElement('style');
         style.textContent = '.spinning { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
         document.head.appendChild(style);
+        
+        // Modal functions for quick actions
+        function showTakeNoteModal() {
+            const taskId = %d;
+            const content = prompt('Enter your note:');
+            if (content) {
+                const noteType = prompt('Note type (observations, bugs, ideas, lessons_learned, issues, notes):', 'notes');
+                alert('Note functionality would be implemented with API call:\\n\\nCommand: ./agent-task-sqlite take-note --task=' + taskId + ' --type=' + (noteType || 'notes') + ' --content="' + content + '"');
+            }
+        }
+        
+        function showWriteReportModal() {
+            const taskId = %d;
+            const content = prompt('Enter your completion report:');
+            if (content) {
+                alert('Report functionality would be implemented with API call:\\n\\nCommand: ./agent-task-sqlite write-completion-report --task=' + taskId + ' --content="' + content + '"');
+            }
+        }
     </script>
 </body>
 </html>`,
 		data.Task.ID, data.Task.Slug, data.Task.ProjectSlug, data.Task.Slug, data.Task.Status, data.Task.ID, data.Task.Slug,
 		data.Task.ProjectName, data.Task.Type, data.Task.CreatedAt.Format("Jan 2, 2006 15:04"),
 		statusBadge, agentInfo, data.Task.Instructions, completionNotes,
-		dependenciesHTML, dependentsHTML, locationsHTML, reportsHTML,
+		dependenciesHTML, dependentsHTML, locationsHTML, reportsHTML, notesHTML,
+		s.getReportButtonState(data.Task.Status), data.Task.ProjectSlug, data.Task.ID, data.Task.ID,
 	)))
 }
 
@@ -1641,4 +1724,89 @@ func (s *ServeCommand) getBottomMargin(current, last int) string {
 		return ""
 	}
 	return " border-bottom pb-3"
+}
+
+func (s *ServeCommand) buildNotesHTML(notes []NoteView) string {
+	if len(notes) == 0 {
+		return `<div class="card">
+			<div class="card-header">
+				<h6 class="mb-0"><i class="bi bi-sticky"></i> Task Notes</h6>
+			</div>
+			<div class="card-body">
+				<p class="text-muted">No notes recorded</p>
+			</div>
+		</div>`
+	}
+
+	html := `<div class="card">
+		<div class="card-header">
+			<h6 class="mb-0"><i class="bi bi-sticky"></i> Task Notes (%d)</h6>
+		</div>
+		<div class="card-body">`
+
+	for i, note := range notes {
+		noteTypeClass := s.getNoteTypeClass(note.Type)
+		noteTypeIcon := s.getNoteTypeIcon(note.Type)
+		
+		html += fmt.Sprintf(`
+			<div class="mb-3%s">
+				<div class="d-flex justify-content-between align-items-start mb-2">
+					<h6 class="mb-0">
+						<span class="badge %s">%s %s</span>
+					</h6>
+					<small class="text-muted">%s</small>
+				</div>
+				<div class="alert alert-light">
+					<pre class="mb-0 small">%s</pre>
+				</div>
+			</div>`,
+			s.getBottomMargin(i, len(notes)-1),
+			noteTypeClass, noteTypeIcon, note.Type,
+			note.CreatedAt.Format("Jan 2 15:04"),
+			note.Content)
+	}
+
+	html += `</div></div>`
+	return fmt.Sprintf(html, len(notes))
+}
+
+func (s *ServeCommand) getNoteTypeClass(noteType string) string {
+	switch noteType {
+	case "bugs":
+		return "bg-danger"
+	case "issues":
+		return "bg-warning text-dark"
+	case "observations":
+		return "bg-info"
+	case "lessons_learned":
+		return "bg-success"
+	case "ideas":
+		return "bg-primary"
+	default:
+		return "bg-secondary"
+	}
+}
+
+func (s *ServeCommand) getNoteTypeIcon(noteType string) string {
+	switch noteType {
+	case "bugs":
+		return "<i class=\"bi bi-bug\"></i>"
+	case "issues":
+		return "<i class=\"bi bi-exclamation-triangle\"></i>"
+	case "observations":
+		return "<i class=\"bi bi-eye\"></i>"
+	case "lessons_learned":
+		return "<i class=\"bi bi-lightbulb\"></i>"
+	case "ideas":
+		return "<i class=\"bi bi-star\"></i>"
+	default:
+		return "<i class=\"bi bi-sticky\"></i>"
+	}
+}
+
+func (s *ServeCommand) getReportButtonState(status string) string {
+	if status != "completed" {
+		return "disabled title=\"Task must be completed to write a report\""
+	}
+	return ""
 }

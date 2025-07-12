@@ -4,14 +4,17 @@ A command-line tool for managing agent tasks, locations, and reports in SQLite. 
 
 ## Features
 
-- **Project Management**: Create and organize work into projects with friendly slugs
+- **Project Management**: Create and organize work into projects with friendly slugs and guidelines
+- **Project Guidelines**: Store concise and detailed guidelines displayed during task operations
 - **Agent Management**: Register agents tied to specific projects with slug-based identification
 - **Task Management**: Create, query, and track analysis tasks with dependencies using flexible identifiers
+- **Task Notes**: Record observations, bugs, lessons learned, and ideas during task execution
 - **Dependency Blocking**: Tasks with incomplete dependencies cannot be assigned until prerequisites are completed
 - **Task Assignment**: Assign tasks to agents with validation and force reassignment options
 - **Project-Agent Binding**: Agents are tied to specific projects and cannot work on tasks from other projects
 - **Location Tracking**: Store and manage code locations relevant to tasks
-- **Report Generation**: Create reports linked to tasks and locations
+- **Report Generation**: Create comprehensive completion reports linked to tasks and locations
+- **Web Interface**: Monitor and manage tasks through a web dashboard with quick actions
 - **Slug-based Identification**: Use human-friendly slugs instead of numeric IDs
 - **Database Locking**: Safe concurrent access with automatic retry logic
 - **Debug Logging**: Comprehensive debug logging for troubleshooting
@@ -37,11 +40,13 @@ export AGENT_SQLITE_DB=/path/to/your/database.db
 
 The tool provides several commands organized around the core entities:
 
-- **Projects**: `create-project`, `list-projects`
+- **Projects**: `create-project`, `list-projects`, `get-guidelines`
 - **Agents**: `create-agent`, `list-agents`
 - **Tasks**: `insert-task`, `query-tasks`, `assign-task`, `complete-task`
+- **Notes**: `take-note`, `get-notes`
 - **Locations**: `insert-locations`
-- **Reports**: `create-report`
+- **Reports**: `create-report`, `write-completion-report`, `get-report`
+- **Web Interface**: `serve`
 
 ## Usage Examples
 
@@ -55,17 +60,25 @@ task-manager create-project \
   --name="Authentication Analysis" \
   --description="Analyze authentication patterns and security implementations across the codebase"
 
-# Create a project with custom slug
+# Create a project with custom slug and guidelines
 task-manager create-project \
   --name="Database Security Audit" \
   --description="Comprehensive security audit of database access patterns" \
-  --slug="db-security"
+  --slug="db-security" \
+  --concise-guidelines="Focus on SQL injection and access control vulnerabilities" \
+  --full-guidelines="Use static analysis tools, review all database queries, check user permissions, document findings in detail"
 
 # List all projects
 task-manager list-projects
 
 # Show specific project by slug
 task-manager list-projects --project=authentication-analysis
+
+# Display project guidelines
+task-manager get-guidelines --project=db-security
+
+# Display only concise guidelines
+task-manager get-guidelines --project=db-security --concise
 ```
 
 ### 2. Registering Agents (Project-Specific)
@@ -173,7 +186,43 @@ task-manager complete-task \
   --task=2
 ```
 
-### 6. Project-Agent Validation
+### 6. Recording Task Notes
+
+Record observations, bugs, and lessons learned during task execution:
+
+```bash
+# Take a general note
+task-manager take-note \
+  --task=5 \
+  --content="Found the authentication logic in auth.go"
+
+# Record a bug
+task-manager take-note \
+  --task=authentication-analysis/gather-patterns \
+  --type=bugs \
+  --content="Authentication middleware crashes with nil pointer on line 42"
+
+# Record observations
+task-manager take-note \
+  --project-id=1 \
+  --task-slug=gather-patterns \
+  --type=observations \
+  --content="Most auth code is in middleware package"
+
+# Record lessons learned
+task-manager take-note \
+  --task=5 \
+  --type=lessons_learned \
+  --content="Always check for null pointers in middleware chains"
+
+# Get all notes for a task
+task-manager get-notes --task=5
+
+# Get only bug reports
+task-manager get-notes --task=authentication-analysis/gather-patterns --type=bugs
+```
+
+### 7. Project-Agent Validation
 
 The system enforces that agents can only work on tasks from their assigned project:
 
@@ -186,7 +235,7 @@ task-manager assign-task \
 # Expected error: Agent belongs to different project
 ```
 
-### 7. Managing Code Locations
+### 8. Managing Code Locations
 
 Store relevant code locations for tasks:
 
@@ -205,7 +254,7 @@ task-manager insert-locations \
   --locations="src/auth/session.go:Session management"
 ```
 
-### 8. Creating Reports
+### 9. Creating Reports
 
 Generate reports for completed analysis:
 
@@ -225,9 +274,25 @@ task-manager create-report \
   --task-id=2 \
   --content="Security vulnerability found in authentication flow" \
   --location-ids=1,2,3
+
+# Write a completion report for a finished task
+task-manager write-completion-report \
+  --task=5 \
+  --content="Analysis complete. Found 3 security issues in authentication middleware."
+
+# Write a completion report from file
+task-manager write-completion-report \
+  --task=authentication-analysis/analysis-task \
+  --report-file="./analysis-report.md"
+
+# Get all reports for a task
+task-manager get-report --task=5
+
+# Get reports with linked locations
+task-manager get-report --task=authentication-analysis/analysis-task --with-locations
 ```
 
-### 9. Querying and Filtering
+### 10. Querying and Filtering
 
 The tool provides powerful querying capabilities:
 
@@ -249,9 +314,39 @@ task-manager query-tasks --status=completed --limit=10
 
 # Show specific task details
 task-manager query-tasks --task-id=5
+
+# Show tasks with notes included
+task-manager query-tasks --with-notes
+
+# Show tasks with reports included
+task-manager query-tasks --with-reports
+
+# Show tasks with both notes and reports
+task-manager query-tasks --with-notes --with-reports
 ```
 
-### 10. Debug Logging
+### 11. Web Interface
+
+Start the web dashboard to monitor and manage tasks:
+
+```bash
+# Start web server on default port 8080
+task-manager serve
+
+# Start on custom port
+task-manager serve --port=8081
+```
+
+The web interface provides:
+- Task overview with status indicators
+- Project reports and statistics
+- Task detail pages with notes and reports
+- Quick action buttons for taking notes and writing reports
+- Real-time auto-refresh functionality
+
+Access the dashboard at: http://localhost:8080
+
+### 12. Debug Logging
 
 Use debug logging to troubleshoot issues:
 
@@ -294,11 +389,13 @@ task-manager query-tasks --fields=id,type,status,instructions
 Here's a complete workflow example demonstrating all features:
 
 ```bash
-# 1. Create a project
+# 1. Create a project with guidelines
 task-manager create-project \
   --name="API Security Review" \
   --description="Review API endpoints for security vulnerabilities" \
-  --slug="api-security"
+  --slug="api-security" \
+  --concise-guidelines="Focus on authentication, authorization, and input validation" \
+  --full-guidelines="Use OWASP Top 10 as reference, test all endpoints for common vulnerabilities, document findings with PoC examples"
 
 # 2. Register project-specific agents
 task-manager create-agent \
@@ -325,11 +422,22 @@ task-manager assign-task \
   --agent=gatherer \
   --task=api-security/gather-apis
 
-# 5. Add code locations during gathering
+# 5. Add code locations and take notes during gathering
 task-manager insert-locations \
   --task=api-security/gather-apis \
   --locations="src/api/routes.go:API route definitions" \
   --locations="src/middleware/security.go:Security middleware"
+
+# Take notes during gathering
+task-manager take-note \
+  --task=api-security/gather-apis \
+  --type=observations \
+  --content="Found 25 API endpoints, most use JWT authentication"
+
+task-manager take-note \
+  --task=api-security/gather-apis \
+  --type=bugs \
+  --content="POST /admin/users endpoint missing authentication check"
 
 # 6. Create analysis task with dependency
 task-manager insert-task \
@@ -356,34 +464,65 @@ task-manager assign-task \
   --agent=analyst \
   --task=api-security/analyze-api-security
 
-# 10. Complete the analysis task
+# 10. Take notes during analysis
+task-manager take-note \
+  --task=api-security/analyze-api-security \
+  --type=lessons_learned \
+  --content="Input validation should be implemented at both API gateway and application level"
+
+# 11. Complete the analysis task
 task-manager complete-task \
   --task=api-security/analyze-api-security \
   --notes="API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points"
 
-# 11. Generate detailed report
-task-manager create-report \
+# 12. Write comprehensive completion report
+task-manager write-completion-report \
   --task=api-security/analyze-api-security \
-  --content="Comprehensive API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points. Recommendations: implement OAuth2, use parameterized queries."
+  --content="Comprehensive API security analysis complete. Found 3 endpoints without authentication, 2 potential SQL injection points. Recommendations: implement OAuth2, use parameterized queries." \
+  --location-ids=1,2
 
-# 12. Review complete workflow
-task-manager query-tasks --project-id=1 --output=json
+# 13. Review complete workflow with notes and reports
+task-manager query-tasks --project-id=1 --with-notes --with-reports --output=json
+
+# 14. Start web interface to view results
+task-manager serve --port=8080
 ```
 
 ## Database Schema
 
 The tool uses the following database schema:
 
-- **projects**: Store project information with unique slugs
+- **projects**: Store project information with unique slugs and guidelines
 - **agents**: Store agent descriptions tied to specific projects
 - **tasks**: Store tasks with project/agent assignments and dependencies  
 - **task_dependencies**: Track task dependency relationships
+- **task_notes**: Store notes, observations, bugs, and lessons learned during task execution
 - **gathered_locations**: Store code locations relevant to tasks
 - **reports**: Store analysis reports
 - **report_locations**: Link reports to specific locations
 - **agent_steps**: Track agent execution steps (for future use)
 
 ## Advanced Features
+
+### Project Guidelines System
+
+Projects can include both concise and detailed guidelines:
+- **Concise Guidelines**: Short instructions displayed when creating/completing tasks
+- **Full Guidelines**: Detailed working instructions accessible via `get-guidelines` command
+- Guidelines help maintain consistency across project work
+- Automatically displayed during task lifecycle operations
+
+### Task Notes System
+
+Record various types of notes during task execution:
+- **observations**: General observations during task work
+- **lessons_learned**: Important lessons to remember for future tasks
+- **notes**: General notes and comments
+- **bugs**: Bug reports and issues encountered
+- **ideas**: Ideas for future improvements
+- **issues**: Issues that need to be addressed
+
+Notes are color-coded in the web interface and can be filtered by type.
 
 ### Dependency Management
 
@@ -456,6 +595,12 @@ task-manager assign-task --help
 task-manager complete-task --help
 task-manager create-agent --help
 task-manager create-report --help
+task-manager take-note --help
+task-manager write-completion-report --help
+task-manager get-notes --help
+task-manager get-report --help
+task-manager get-guidelines --help
+task-manager serve --help
 ```
 
 ## Environment Variables

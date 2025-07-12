@@ -25,22 +25,40 @@ This guide provides step-by-step testing scenarios to validate the complete agen
 
 ### Step 1.1: Create Projects
 ```bash
-# Create first project with auto-generated slug
+# Create first project with auto-generated slug and guidelines
 task-manager create-project \
   --name="Authentication Analysis" \
-  --description="Analyze authentication patterns and security implementations"
+  --description="Analyze authentication patterns and security implementations" \
+  --concise-guidelines="Focus on secure authentication patterns and vulnerabilities" \
+  --full-guidelines="Use static analysis tools, review authentication flows, check for common vulnerabilities like weak passwords, session management issues"
 
-# Expected output: Shows project with id=1, slug="authentication-analysis"
+# Expected output: Shows project with id=1, slug="authentication-analysis", includes guidelines
 ```
 
 ```bash
-# Create second project with custom slug
+# Create second project with custom slug and guidelines
 task-manager create-project \
   --name="Database Security Audit" \
   --description="Comprehensive security audit of database access patterns" \
-  --slug="db-security"
+  --slug="db-security" \
+  --concise-guidelines="Check for SQL injection and access control issues" \
+  --full-guidelines="Review all database queries, check user permissions, test for SQL injection, document findings with examples"
 
-# Expected output: Shows project with id=2, slug="db-security"
+# Expected output: Shows project with id=2, slug="db-security", includes guidelines
+```
+
+```bash
+# Display project guidelines
+task-manager get-guidelines --project=db-security
+
+# Expected output: Shows both concise and full guidelines
+```
+
+```bash
+# Display only concise guidelines
+task-manager get-guidelines --project=authentication-analysis --concise
+
+# Expected output: Shows only concise guidelines
 ```
 
 ### Step 1.2: List Projects
@@ -289,7 +307,78 @@ task-manager insert-locations \
 # Expected output: Error about task not found
 ```
 
-## Test Scenario 5: Task Completion
+## Test Scenario 5: Task Notes System
+
+### Step 5.1: Record Different Types of Notes
+```bash
+# Take a general note during task work
+task-manager take-note \
+  --task=1 \
+  --content="Found authentication logic scattered across multiple files"
+
+# Expected output: Shows note creation with task association
+```
+
+```bash
+# Record bug findings
+task-manager take-note \
+  --task=authentication-analysis/gather-information \
+  --type=bugs \
+  --content="Null pointer exception in auth middleware when session expires"
+
+# Expected output: Shows bug note creation
+```
+
+```bash
+# Record observations
+task-manager take-note \
+  --task=1 \
+  --type=observations \
+  --content="Most authentication code is in the middleware package"
+
+# Expected output: Shows observation note creation
+```
+
+```bash
+# Record lessons learned
+task-manager take-note \
+  --task=1 \
+  --type=lessons_learned \
+  --content="Always validate session tokens before processing requests"
+
+# Expected output: Shows lessons learned note creation
+```
+
+### Step 5.2: Retrieve and Filter Notes
+```bash
+# Get all notes for a task
+task-manager get-notes --task=1
+
+# Expected output: Shows all notes for the task, ordered by creation time
+```
+
+```bash
+# Get only bug reports
+task-manager get-notes --task=1 --type=bugs
+
+# Expected output: Shows only bug-type notes
+```
+
+```bash
+# Get notes with limit
+task-manager get-notes --task=1 --limit=2
+
+# Expected output: Shows maximum 2 notes
+```
+
+```bash
+# Test with invalid task reference
+task-manager get-notes --task=999
+
+# Expected output: Error about task not found
+```
+
+## Test Scenario 6: Task Completion
 
 ### Step 5.1: Test Task Completion with Notes
 ```bash
@@ -339,7 +428,7 @@ task-manager query-tasks --task-id=5
 # Expected output: Should show completed status and completion notes
 ```
 
-## Test Scenario 6: Report Generation
+## Test Scenario 7: Report Generation and Enhanced Reports
 
 ### Step 5.1: Create Reports
 ```bash
@@ -374,7 +463,97 @@ task-manager create-report \
 # Expected output: Shows report with linked locations
 ```
 
-## Test Scenario 7: Output Formats and Filtering
+### Step 5.2: Test Enhanced Report Commands
+```bash
+# Write completion report for a completed task
+task-manager write-completion-report \
+  --task=1 \
+  --content="Authentication analysis complete. Found 3 security vulnerabilities in password reset flow."
+
+# Expected output: Shows completion report creation
+```
+
+```bash
+# Create test report file
+echo "# Security Analysis Report
+
+## Summary
+Found multiple security issues in authentication system.
+
+## Findings
+1. Weak password validation
+2. Missing rate limiting
+3. Session fixation vulnerability
+
+## Recommendations
+- Implement strong password policies
+- Add rate limiting to login endpoints
+- Use secure session management" > /tmp/test-completion-report.md
+
+# Write completion report from file
+task-manager write-completion-report \
+  --task=2 \
+  --report-file=/tmp/test-completion-report.md \
+  --location-ids=1,2
+
+# Expected output: Shows report created from file with linked locations
+```
+
+```bash
+# Get all reports for a task
+task-manager get-report --task=1
+
+# Expected output: Shows all reports for the task
+```
+
+```bash
+# Get reports with linked locations
+task-manager get-report --task=2 --with-locations
+
+# Expected output: Shows reports with location details
+```
+
+```bash
+# Test completion report for non-completed task (should fail)
+task-manager write-completion-report \
+  --task=3 \
+  --content="Test report"
+
+# Expected output: Error that task must be completed first
+```
+
+## Test Scenario 8: Enhanced Query Features
+
+### Step 8.1: Test Enhanced Query Options
+```bash
+# Query tasks with notes included
+task-manager query-tasks --with-notes
+
+# Expected output: Shows tasks with embedded note data
+```
+
+```bash
+# Query tasks with reports included
+task-manager query-tasks --with-reports
+
+# Expected output: Shows tasks with embedded report data
+```
+
+```bash
+# Query tasks with both notes and reports
+task-manager query-tasks --with-notes --with-reports
+
+# Expected output: Shows tasks with both notes and reports data
+```
+
+```bash
+# Query specific task with enhanced data
+task-manager query-tasks --task-id=1 --with-notes --with-reports
+
+# Expected output: Shows detailed task info with notes and reports
+```
+
+## Test Scenario 9: Output Formats and Filtering
 
 ### Step 6.1: Test Different Output Formats
 ```bash
@@ -435,7 +614,61 @@ task-manager query-tasks --limit=2
 # Expected output: Maximum 2 tasks
 ```
 
-## Test Scenario 8: Error Handling and Edge Cases
+## Test Scenario 10: Web Interface Testing
+
+### Step 10.1: Start Web Server
+```bash
+# Start web server on default port
+task-manager serve &
+SERVER_PID=$!
+
+# Expected output: Server starts on port 8080
+```
+
+```bash
+# Test web interface accessibility (requires curl)
+curl -s http://localhost:8080 | head -20
+
+# Expected output: HTML content of dashboard page
+```
+
+```bash
+# Test API endpoints
+curl -s http://localhost:8080/api/dashboard | jq .
+
+# Expected output: JSON dashboard data with projects, agents, tasks
+```
+
+```bash
+# Test task detail API
+curl -s http://localhost:8080/api/task/1 | jq .
+
+# Expected output: JSON task detail data including notes, reports, locations
+```
+
+```bash
+# Stop web server
+kill $SERVER_PID
+
+# Expected output: Server stops gracefully
+```
+
+### Step 10.2: Test Web Server Options
+```bash
+# Start on custom port
+task-manager serve --port=8081 &
+CUSTOM_SERVER_PID=$!
+
+# Test custom port
+curl -s http://localhost:8081/api/dashboard > /dev/null && echo "Custom port works"
+
+# Stop custom server
+kill $CUSTOM_SERVER_PID
+
+# Expected output: Server works on custom port
+```
+
+## Test Scenario 11: Error Handling and Edge Cases
 
 ### Step 7.1: Test Invalid References
 ```bash

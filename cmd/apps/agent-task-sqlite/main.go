@@ -55,6 +55,11 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		NewAssignTaskCommand,
 		NewCompleteTaskCommand,
 		NewServeCommand,
+		NewTakeNoteCommand,
+		NewWriteCompletionReportCommand,
+		NewGetNotesCommand,
+		NewGetReportCommand,
+		NewGetGuidelinesCommand,
 	}
 
 	for _, cmdFactory := range commands {
@@ -89,6 +94,16 @@ allowing you to insert tasks, query their status, manage code locations, and cre
 		case *CompleteTaskCommand:
 			cmd = c
 		case *ServeCommand:
+			cmd = c
+		case *TakeNoteCommand:
+			cmd = c
+		case *WriteCompletionReportCommand:
+			cmd = c
+		case *GetNotesCommand:
+			cmd = c
+		case *GetReportCommand:
+			cmd = c
+		case *GetGuidelinesCommand:
 			cmd = c
 		default:
 			fmt.Fprintf(os.Stderr, "Unknown command type: %T\n", cmdInterface)

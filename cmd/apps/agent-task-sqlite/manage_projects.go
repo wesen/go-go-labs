@@ -19,9 +19,11 @@ type CreateProjectCommand struct {
 
 // CreateProjectSettings holds the parameters for creating a project
 type CreateProjectSettings struct {
-	Name        string `glazed.parameter:"name"`
-	Description string `glazed.parameter:"description"`
-	Slug        string `glazed.parameter:"slug"`
+	Name              string `glazed.parameter:"name"`
+	Description       string `glazed.parameter:"description"`
+	Slug              string `glazed.parameter:"slug"`
+	ConciseGuidelines string `glazed.parameter:"concise-guidelines"`
+	FullGuidelines    string `glazed.parameter:"full-guidelines"`
 }
 
 // Ensure interface implementation
@@ -59,9 +61,9 @@ func (c *CreateProjectCommand) RunIntoGlazeProcessor(
 
 	// Insert the project
 	result, err := db.ExecContext(ctx, `
-		INSERT INTO projects (slug, name, description)
-		VALUES (?, ?, ?)
-	`, slug, s.Name, s.Description)
+		INSERT INTO projects (slug, name, description, concise_guidelines, full_guidelines)
+		VALUES (?, ?, ?, ?, ?)
+	`, slug, s.Name, s.Description, s.ConciseGuidelines, s.FullGuidelines)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert project")
 	}
@@ -78,6 +80,8 @@ func (c *CreateProjectCommand) RunIntoGlazeProcessor(
 		types.MRP("slug", slug),
 		types.MRP("name", s.Name),
 		types.MRP("description", s.Description),
+		types.MRP("concise_guidelines", s.ConciseGuidelines),
+		types.MRP("full_guidelines", s.FullGuidelines),
 	)
 
 	return gp.AddRow(ctx, row)
@@ -122,6 +126,16 @@ Examples:
 				parameters.ParameterTypeString,
 				parameters.WithHelp("URL-friendly slug for the project (auto-generated if not provided)"),
 				parameters.WithDefault(""),
+			),
+			parameters.NewParameterDefinition(
+				"concise-guidelines",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Short guidelines displayed when creating/completing tasks"),
+			),
+			parameters.NewParameterDefinition(
+				"full-guidelines",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Detailed project guidelines and working instructions"),
 			),
 		),
 		// Add parameter layers

@@ -23,6 +23,8 @@ type AssignTaskCommand struct {
 type AssignTaskSettings struct {
 	AgentSlug string `glazed.parameter:"agent"`
 	TaskID    string `glazed.parameter:"task"`
+	TaskSlug  string `glazed.parameter:"task-slug"`
+	ProjectID string `glazed.parameter:"project-id"`
 	Force     bool   `glazed.parameter:"force"`
 }
 
@@ -53,10 +55,32 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "failed to resolve agent")
 	}
 
-	// Resolve task ID
-	taskID, err := ResolveTaskID(ctx, db, s.TaskID)
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve task")
+	// Resolve task ID with fallback options
+	var taskID int
+	
+	if s.TaskID != "" {
+		taskID, err = ResolveTaskID(ctx, db, s.TaskID)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve task")
+		}
+	} else if s.TaskSlug != "" && s.ProjectID != "" {
+		// Resolve using project-id and task-slug combination
+		projectID, err := ResolveProjectID(ctx, db, s.ProjectID)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve project")
+		}
+		
+		err = db.QueryRowContext(ctx, `
+			SELECT id FROM tasks WHERE project_id = ? AND slug = ?
+		`, projectID, s.TaskSlug).Scan(&taskID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return errors.Errorf("task not found: project %s, task %s", s.ProjectID, s.TaskSlug)
+			}
+			return errors.Wrap(err, "failed to resolve task by project and slug")
+		}
+	} else {
+		return errors.New("must provide either --task or both --project-id and --task-slug")
 	}
 
 	// Check if task is available (pending status) or if force is being used
@@ -110,7 +134,7 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 
 	// Check if agent is already working on another task and validate project assignment
 	var currentTaskID sql.NullInt64
-	var agentProjectID int
+	var agentProjectID sql.NullInt64
 	err = db.QueryRowContext(ctx, `
 		SELECT current_task_id, current_project_id FROM agents WHERE id = ?
 	`, agentID).Scan(&currentTaskID, &agentProjectID)
@@ -119,8 +143,8 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 	}
 
 	// Validate that agent belongs to the same project as the task
-	if agentProjectID != projectID {
-		return errors.Errorf("agent belongs to project %d but task belongs to project %d", agentProjectID, projectID)
+	if agentProjectID.Valid && int(agentProjectID.Int64) != projectID {
+		return errors.Errorf("agent belongs to project %d but task belongs to project %d", agentProjectID.Int64, projectID)
 	}
 
 	if currentTaskID.Valid {
@@ -201,6 +225,7 @@ func (c *AssignTaskCommand) RunIntoGlazeProcessor(
 		types.MRP("agent_name", agentName),
 		types.MRP("status", "in_progress"),
 		types.MRP("instructions", instructions),
+		types.MRP("reminder", "Don't forget to take notes, write down locations, and provide a full report when finishing the task."),
 	)
 
 	return gp.AddRow(ctx, row)
@@ -247,7 +272,16 @@ Examples:
 				"task",
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Task ID or project_slug/task_slug to assign"),
-				parameters.WithRequired(true),
+			),
+			parameters.NewParameterDefinition(
+				"task-slug",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Task slug (use with --project-id)"),
+			),
+			parameters.NewParameterDefinition(
+				"project-id",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Project ID or slug (use with --task-slug)"),
 			),
 			parameters.NewParameterDefinition(
 				"force",

@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS projects (
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
+    concise_guidelines TEXT,
+    full_guidelines TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -173,6 +175,16 @@ CREATE TABLE IF NOT EXISTS report_locations (
     FOREIGN KEY (location_id) REFERENCES gathered_locations(id)
 );
 
+-- Table for notes during task execution
+CREATE TABLE IF NOT EXISTS task_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('observations', 'lessons_learned', 'notes', 'bugs', 'ideas', 'issues')),
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (task_id) REFERENCES tasks(id)
+);
+
 -- Indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
@@ -184,6 +196,8 @@ CREATE INDEX IF NOT EXISTS idx_agents_current_task ON agents(current_task_id);
 CREATE INDEX IF NOT EXISTS idx_steps_task ON agent_steps(task_id);
 CREATE INDEX IF NOT EXISTS idx_locations_task ON gathered_locations(task_id);
 CREATE INDEX IF NOT EXISTS idx_reports_task ON reports(task_id);
+CREATE INDEX IF NOT EXISTS idx_notes_task ON task_notes(task_id);
+CREATE INDEX IF NOT EXISTS idx_notes_type ON task_notes(type);
 `
 
 	_, err := db.Exec(schema)
@@ -208,6 +222,85 @@ func runMigrations(db *sql.DB) error {
 		_, err = db.Exec("ALTER TABLE tasks ADD COLUMN completion_notes TEXT")
 		if err != nil {
 			return errors.Wrap(err, "failed to add completion_notes column")
+		}
+	}
+
+
+
+	// Check if task_notes table exists
+	var hasNotesTable bool
+	err = db.QueryRow(`
+		SELECT COUNT(*) > 0 
+		FROM sqlite_master 
+		WHERE type = 'table' AND name = 'task_notes'
+	`).Scan(&hasNotesTable)
+	if err != nil {
+		return errors.Wrap(err, "failed to check task_notes table")
+	}
+
+	// Create task_notes table if it doesn't exist
+	if !hasNotesTable {
+		_, err = db.Exec(`
+			CREATE TABLE task_notes (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				task_id INTEGER NOT NULL,
+				type TEXT NOT NULL CHECK(type IN ('observations', 'lessons_learned', 'notes', 'bugs', 'ideas', 'issues')),
+				content TEXT NOT NULL,
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (task_id) REFERENCES tasks(id)
+			)
+		`)
+		if err != nil {
+			return errors.Wrap(err, "failed to create task_notes table")
+		}
+
+		// Create indexes for task_notes
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_notes_task ON task_notes(task_id)")
+		if err != nil {
+			return errors.Wrap(err, "failed to create task_notes task index")
+		}
+
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_notes_type ON task_notes(type)")
+		if err != nil {
+			return errors.Wrap(err, "failed to create task_notes type index")
+		}
+	}
+
+	// Check if concise_guidelines column exists in projects table
+	var hasConciseGuidelines bool
+	err = db.QueryRow(`
+		SELECT COUNT(*) > 0 
+		FROM pragma_table_info('projects') 
+		WHERE name = 'concise_guidelines'
+	`).Scan(&hasConciseGuidelines)
+	if err != nil {
+		return errors.Wrap(err, "failed to check concise_guidelines column")
+	}
+
+	// Add concise_guidelines column if it doesn't exist
+	if !hasConciseGuidelines {
+		_, err = db.Exec("ALTER TABLE projects ADD COLUMN concise_guidelines TEXT")
+		if err != nil {
+			return errors.Wrap(err, "failed to add concise_guidelines column")
+		}
+	}
+
+	// Check if full_guidelines column exists in projects table
+	var hasFullGuidelines bool
+	err = db.QueryRow(`
+		SELECT COUNT(*) > 0 
+		FROM pragma_table_info('projects') 
+		WHERE name = 'full_guidelines'
+	`).Scan(&hasFullGuidelines)
+	if err != nil {
+		return errors.Wrap(err, "failed to check full_guidelines column")
+	}
+
+	// Add full_guidelines column if it doesn't exist
+	if !hasFullGuidelines {
+		_, err = db.Exec("ALTER TABLE projects ADD COLUMN full_guidelines TEXT")
+		if err != nil {
+			return errors.Wrap(err, "failed to add full_guidelines column")
 		}
 	}
 

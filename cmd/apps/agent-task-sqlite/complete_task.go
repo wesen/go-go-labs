@@ -142,6 +142,24 @@ func (c *CompleteTaskCommand) RunIntoGlazeProcessor(
 		row.Set("completion_notes", s.Notes)
 	}
 
+	// Get project guidelines to display
+	var conciseGuidelines sql.NullString
+	err = db.QueryRowContext(ctx, `
+		SELECT concise_guidelines FROM projects 
+		WHERE id = (SELECT project_id FROM tasks WHERE id = ?)
+	`, taskID).Scan(&conciseGuidelines)
+	if err != nil {
+		log.Warn().Err(err).Int("task_id", taskID).Msg("Failed to get project guidelines")
+	}
+
+	// Add project guidelines if available
+	if conciseGuidelines.Valid && conciseGuidelines.String != "" {
+		row.Set("project_guidelines", conciseGuidelines.String)
+	}
+
+	// Add reminder
+	row.Set("reminder", "Don't forget to provide a full report using write-completion-report.")
+
 	return gp.AddRow(ctx, row)
 }
 

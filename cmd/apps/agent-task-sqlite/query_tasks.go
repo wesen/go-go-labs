@@ -21,13 +21,15 @@ type QueryTasksCommand struct {
 
 // QueryTasksSettings holds the parameters for querying tasks
 type QueryTasksSettings struct {
-	Status    string `glazed.parameter:"status"`
-	Type      string `glazed.parameter:"type"`
-	ProjectID int    `glazed.parameter:"project-id"`
-	AgentID   int    `glazed.parameter:"agent-id"`
-	Limit     int    `glazed.parameter:"limit"`
-	ShowDeps  bool   `glazed.parameter:"show-deps"`
-	TaskID    int    `glazed.parameter:"task-id"`
+	Status      string `glazed.parameter:"status"`
+	Type        string `glazed.parameter:"type"`
+	ProjectID   int    `glazed.parameter:"project-id"`
+	AgentID     int    `glazed.parameter:"agent-id"`
+	Limit       int    `glazed.parameter:"limit"`
+	ShowDeps    bool   `glazed.parameter:"show-deps"`
+	TaskID      int    `glazed.parameter:"task-id"`
+	WithNotes   bool   `glazed.parameter:"with-notes"`
+	WithReports bool   `glazed.parameter:"with-reports"`
 }
 
 // Ensure interface implementation
@@ -82,7 +84,7 @@ func (c *QueryTasksCommand) RunIntoGlazeProcessor(
 	}
 
 	// Add ordering and limit
-	query += " ORDER BY created_at DESC"
+	query += " ORDER BY created_at ASC"
 	if s.Limit > 0 {
 		query += " LIMIT ?"
 		args = append(args, s.Limit)
@@ -140,6 +142,26 @@ func (c *QueryTasksCommand) RunIntoGlazeProcessor(
 			rowData.Set("dependencies", deps)
 		}
 
+		// Add notes if requested
+		if s.WithNotes {
+			notes, err := getTaskNotes(ctx, db, id)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get notes for task %d", id)
+			}
+			rowData.Set("notes", notes)
+			rowData.Set("note_count", len(notes))
+		}
+
+		// Add reports if requested
+		if s.WithReports {
+			reports, err := getTaskReports(ctx, db, id)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get reports for task %d", id)
+			}
+			rowData.Set("reports", reports)
+			rowData.Set("report_count", len(reports))
+		}
+
 		if err := gp.AddRow(ctx, rowData); err != nil {
 			return errors.Wrap(err, "failed to add row")
 		}
@@ -173,6 +195,76 @@ func getTaskDependencies(ctx context.Context, db *sqlx.DB, taskID int) ([]int, e
 	}
 
 	return deps, rows.Err()
+}
+
+// getTaskNotes retrieves notes for a given task
+func getTaskNotes(ctx context.Context, db *sqlx.DB, taskID int) ([]map[string]interface{}, error) {
+	query := `
+		SELECT id, type, content, created_at
+		FROM task_notes
+		WHERE task_id = ?
+		ORDER BY created_at DESC
+	`
+
+	rows, err := db.QueryContext(ctx, query, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []map[string]interface{}
+	for rows.Next() {
+		var id int
+		var noteType, content, createdAt string
+		if err := rows.Scan(&id, &noteType, &content, &createdAt); err != nil {
+			return nil, err
+		}
+		
+		note := map[string]interface{}{
+			"id":         id,
+			"type":       noteType,
+			"content":    content,
+			"created_at": createdAt,
+		}
+		notes = append(notes, note)
+	}
+
+	return notes, rows.Err()
+}
+
+// getTaskReports retrieves reports for a given task
+func getTaskReports(ctx context.Context, db *sqlx.DB, taskID int) ([]map[string]interface{}, error) {
+	query := `
+		SELECT id, content, created_at
+		FROM reports
+		WHERE task_id = ?
+		ORDER BY created_at DESC
+	`
+
+	rows, err := db.QueryContext(ctx, query, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reports []map[string]interface{}
+	for rows.Next() {
+		var id int
+		var content, createdAt string
+		if err := rows.Scan(&id, &content, &createdAt); err != nil {
+			return nil, err
+		}
+		
+		report := map[string]interface{}{
+			"id":            id,
+			"content":       content,
+			"content_length": len(content),
+			"created_at":    createdAt,
+		}
+		reports = append(reports, report)
+	}
+
+	return reports, rows.Err()
 }
 
 func NewQueryTasksCommand() (interface{}, error) {
@@ -259,6 +351,18 @@ Examples:
 				parameters.ParameterTypeInteger,
 				parameters.WithHelp("Show specific task by ID"),
 				parameters.WithDefault(0),
+			),
+			parameters.NewParameterDefinition(
+				"with-notes",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Include task notes in the output"),
+				parameters.WithDefault(false),
+			),
+			parameters.NewParameterDefinition(
+				"with-reports",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Include task reports in the output"),
+				parameters.WithDefault(false),
 			),
 		),
 		// Add parameter layers
