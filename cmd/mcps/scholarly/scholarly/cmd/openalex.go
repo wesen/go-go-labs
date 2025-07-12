@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/clients/openalex"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/clients/openalex"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -12,7 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/common"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/common"
 	"github.com/rs/zerolog/log"
 )
 

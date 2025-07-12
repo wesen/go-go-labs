@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/common"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/querydsl"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/tools"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/common"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/querydsl"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/tools"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"

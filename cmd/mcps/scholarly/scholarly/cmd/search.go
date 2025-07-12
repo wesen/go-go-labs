@@ -13,8 +13,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/querydsl"
-	"github.com/go-go-golems/go-go-mcp/pkg/scholarly/tools"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/querydsl"
+	"github.com/go-go-golems/go-go-labs/cmd/mcps/scholarly/pkg/scholarly/tools"
 	"github.com/rs/zerolog/log"
 )
 
