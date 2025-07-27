@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Slot Machine</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/slot-machine.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/audio-prompt.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>🎰 Casino Slot Machine</h1>
+            <div class="player-stats" role="region" aria-label="Player statistics">
+                <div class="balance" aria-label="Current balance">Balance: $<span id="balance" aria-live="polite">1000</span></div>
+                <div class="last-win" aria-label="Last win amount">Last Win: $<span id="last-win" aria-live="polite">0</span></div>
+            </div>
+            <div class="audio-controls" role="region" aria-label="Audio controls">
+                <button id="audio-toggle" class="audio-btn" title="Toggle Sound" aria-label="Toggle sound effects">🔊</button>
+                <div class="volume-control">
+                    <label for="volume-slider">Volume:</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="70" class="volume-slider" aria-label="Volume control">
+                    <span id="volume-display" aria-live="polite">70%</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <div class="slot-machine">
+                <div class="slot-machine-frame">
+                    <div class="reels-container">
+                        <div class="reel" id="reel-1" role="img" aria-label="First slot reel">
+                            <div class="symbol" aria-label="Cherry symbol">🍒</div>
+                            <div class="symbol" aria-label="Lemon symbol">🍋</div>
+                            <div class="symbol" aria-label="Orange symbol">🍊</div>
+                        </div>
+                        <div class="reel" id="reel-2" role="img" aria-label="Second slot reel">
+                            <div class="symbol" aria-label="Cherry symbol">🍒</div>
+                            <div class="symbol" aria-label="Lemon symbol">🍋</div>
+                            <div class="symbol" aria-label="Orange symbol">🍊</div>
+                        </div>
+                        <div class="reel" id="reel-3" role="img" aria-label="Third slot reel">
+                            <div class="symbol" aria-label="Cherry symbol">🍒</div>
+                            <div class="symbol" aria-label="Lemon symbol">🍋</div>
+                            <div class="symbol" aria-label="Orange symbol">🍊</div>
+                        </div>
+                    </div>
+                    <div class="payline"></div>
+                </div>
+                
+                <div class="betting-controls" role="region" aria-label="Betting controls">
+                    <div class="bet-amount">
+                        <label for="bet-input">Bet Amount:</label>
+                        <input type="number" id="bet-input" min="1" max="100" value="10" aria-label="Enter bet amount">
+                        <div class="bet-presets" role="group" aria-label="Quick bet amounts">
+                            <button class="bet-preset" data-amount="1" aria-label="Bet 1 dollar">$1</button>
+                            <button class="bet-preset" data-amount="5" aria-label="Bet 5 dollars">$5</button>
+                            <button class="bet-preset" data-amount="10" aria-label="Bet 10 dollars">$10</button>
+                            <button class="bet-preset" data-amount="25" aria-label="Bet 25 dollars">$25</button>
+                            <button class="bet-preset" data-amount="100" aria-label="Bet 100 dollars">$100</button>
+                        </div>
+                    </div>
+                    
+                    <button id="spin-button" class="spin-button" aria-label="Spin the slot machine reels">
+                        <span class="button-text">SPIN</span>
+                        <span class="button-cost">$<span id="spin-cost" aria-live="polite">10</span></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="game-info">
+                <div class="paytable">
+                    <h3>Paytable</h3>
+                    <div class="payout-row">
+                        <span class="symbols" aria-label="Three cherries">🍒🍒🍒</span>
+                        <span class="payout">x20</span>
+                    </div>
+                    <div class="payout-row">
+                        <span class="symbols" aria-label="Three lemons">🍋🍋🍋</span>
+                        <span class="payout">x15</span>
+                    </div>
+                    <div class="payout-row">
+                        <span class="symbols" aria-label="Three oranges">🍊🍊🍊</span>
+                        <span class="payout">x10</span>
+                    </div>
+                    <div class="payout-row">
+                        <span class="symbols" aria-label="Three bells">🔔🔔🔔</span>
+                        <span class="payout">x50</span>
+                    </div>
+                    <div class="payout-row">
+                        <span class="symbols" aria-label="Three diamonds">💎💎💎</span>
+                        <span class="payout">x100</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="game-footer">
+            <div class="game-messages">
+                <div id="message-display" aria-live="polite" aria-atomic="true"></div>
+            </div>
+            <!-- Screen reader announcements -->
+            <div id="sr-announcements" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+        </footer>
+    </div>
+
+    <script src="js/game-state.js"></script>
+    <script src="js/slot-machine.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

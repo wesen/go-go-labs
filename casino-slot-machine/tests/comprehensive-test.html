@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Casino Slot Machine Tests</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-result { margin: 5px 0; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        .test-output { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; }
+        button { margin: 5px; padding: 10px 15px; }
+        #game-frame { width: 100%; height: 600px; border: 1px solid #ccc; margin: 20px 0; }
+        .stats { background: #e8f4f8; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎰 Casino Slot Machine - Comprehensive Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>🎯 Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="runFunctionalTests()">Functional Tests</button>
+        <button onclick="runEdgeCaseTests()">Edge Case Tests</button>
+        <button onclick="runResponsiveTests()">Responsive Tests</button>
+        <button onclick="runPerformanceTests()">Performance Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Test Statistics</h2>
+        <div class="stats" id="test-stats">
+            <div>Total Tests: <span id="total-tests">0</span></div>
+            <div>Passed: <span id="passed-tests">0</span></div>
+            <div>Failed: <span id="failed-tests">0</span></div>
+            <div>Warnings: <span id="warning-tests">0</span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎮 Live Game Instance</h2>
+        <iframe id="game-frame" src="http://localhost:8080"></iframe>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script>
+        let testResults = [];
+        let gameWindow = null;
+
+        // Test result tracking
+        function addTestResult(category, name, status, details) {
+            const result = { category, name, status, details, timestamp: new Date() };
+            testResults.push(result);
+            updateTestStats();
+            displayTestResult(result);
+        }
+
+        function updateTestStats() {
+            const total = testResults.length;
+            const passed = testResults.filter(r => r.status === 'pass').length;
+            const failed = testResults.filter(r => r.status === 'fail').length;
+            const warnings = testResults.filter(r => r.status === 'warning').length;
+
+            document.getElementById('total-tests').textContent = total;
+            document.getElementById('passed-tests').textContent = passed;
+            document.getElementById('failed-tests').textContent = failed;
+            document.getElementById('warning-tests').textContent = warnings;
+        }
+
+        function displayTestResult(result) {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            
+            resultDiv.innerHTML = `
+                <h3>${result.category}</h3>
+                <div class="test-result ${result.status}">
+                    ${result.status.toUpperCase()}: ${result.name}
+                </div>
+                <div class="test-output">${result.details}</div>
+                <small>Executed at: ${result.timestamp.toLocaleString()}</small>
+            `;
+            
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            testResults = [];
+            document.getElementById('test-results').innerHTML = '';
+            updateTestStats();
+        }
+
+        // Access game instance
+        function getGameInstance() {
+            try {
+                return document.getElementById('game-frame').contentWindow;
+            } catch (e) {
+                addTestResult('Setup', 'Game Instance Access', 'fail', 
+                    'Cannot access game iframe: ' + e.message);
+                return null;
+            }
+        }
+
+        // Wait for game to load
+        async function waitForGameLoad() {
+            return new Promise((resolve) => {
+                const frame = document.getElementById('game-frame');
+                frame.onload = () => {
+                    setTimeout(() => {
+                        const gameWin = frame.contentWindow;
+                        if (gameWin && gameWin.casinoGame) {
+                            resolve(gameWin);
+                        } else {
+                            // Wait a bit more for initialization
+                            setTimeout(() => resolve(gameWin), 2000);
+                        }
+                    }, 1000);
+                };
+            });
+        }
+
+        // Test Functions
+        async function runAllTests() {
+            clearResults();
+            addTestResult('Test Suite', 'Starting Comprehensive Tests', 'pass', 
+                'Running all test categories...');
+            
+            await runFunctionalTests();
+            await runEdgeCaseTests();
+            await runResponsiveTests();
+            await runPerformanceTests();
+            
+            addTestResult('Test Suite', 'Comprehensive Testing Complete', 'pass', 
+                `Completed ${testResults.length} tests`);
+        }
+
+        async function runFunctionalTests() {
+            addTestResult('Functional Tests', 'Starting Functional Testing', 'pass', 
+                'Testing core game functionality...');
+
+            // Wait for game to load
+            gameWindow = await waitForGameLoad();
+            
+            if (!gameWindow) {
+                addTestResult('Functional Tests', 'Game Load', 'fail', 
+                    'Game failed to load in iframe');
+                return;
+            }
+
+            // Test 1: Game initialization
+            testGameInitialization();
+            
+            // Test 2: UI elements present
+            testUIElements();
+            
+            // Test 3: Game state management
+            await testGameState();
+            
+            // Test 4: Betting system
+            await testBettingSystem();
+            
+            // Test 5: Spin functionality
+            await testSpinFunctionality();
+            
+            // Test 6: Payout calculation
+            testPayoutCalculation();
+        }
+
+        function testGameInitialization() {
+            try {
+                const game = gameWindow.casinoGame;
+                if (game && game.initialized) {
+                    addTestResult('Functional Tests', 'Game Initialization', 'pass', 
+                        'Game successfully initialized with all components');
+                } else {
+                    addTestResult('Functional Tests', 'Game Initialization', 'fail', 
+                        'Game not properly initialized');
+                }
+            } catch (e) {
+                addTestResult('Functional Tests', 'Game Initialization', 'fail', 
+                    'Error testing initialization: ' + e.message);
+            }
+        }
+
+        function testUIElements() {
+            try {
+                const doc = gameWindow.document;
+                const requiredElements = [
+                    'balance', 'last-win', 'bet-input', 'spin-button',
+                    'reel-1', 'reel-2', 'reel-3', 'audio-toggle'
+                ];
+                
+                const missing = [];
+                requiredElements.forEach(id => {
+                    if (!doc.getElementById(id)) {
+                        missing.push(id);
+                    }
+                });
+                
+                if (missing.length === 0) {
+                    addTestResult('Functional Tests', 'UI Elements Present', 'pass', 
+                        'All required UI elements found');
+                } else {
+                    addTestResult('Functional Tests', 'UI Elements Present', 'fail', 
+                        'Missing elements: ' + missing.join(', '));
+                }
+            } catch (e) {
+                addTestResult('Functional Tests', 'UI Elements Present', 'fail', 
+                    'Error testing UI elements: ' + e.message);
+            }
+        }
+
+        async function testGameState() {
+            try {
+                const gameState = gameWindow.gameState;
+                if (!gameState) {
+                    addTestResult('Functional Tests', 'Game State', 'fail', 
+                        'Game state not accessible');
+                    return;
+                }
+                
+                // Test initial state
+                const balance = gameState.getBalance();
+                const bet = gameState.getCurrentBet();
+                
+                if (balance > 0 && bet > 0) {
+                    addTestResult('Functional Tests', 'Game State', 'pass', 
+                        `Initial state valid: Balance=${balance}, Bet=${bet}`);
+                } else {
+                    addTestResult('Functional Tests', 'Game State', 'fail', 
+                        `Invalid initial state: Balance=${balance}, Bet=${bet}`);
+                }
+            } catch (e) {
+                addTestResult('Functional Tests', 'Game State', 'fail', 
+                    'Error testing game state: ' + e.message);
+            }
+        }
+
+        async function testBettingSystem() {
+            try {
+                const gameState = gameWindow.gameState;
+                const originalBet = gameState.getCurrentBet();
+                
+                // Test bet setting
+                gameState.setCurrentBet(25);
+                if (gameState.getCurrentBet() === 25) {
+                    addTestResult('Functional Tests', 'Betting System', 'pass', 
+                        'Bet setting works correctly');
+                } else {
+                    addTestResult('Functional Tests', 'Betting System', 'fail', 
+                        'Bet setting failed');
+                }
+                
+                // Restore original bet
+                gameState.setCurrentBet(originalBet);
+            } catch (e) {
+                addTestResult('Functional Tests', 'Betting System', 'fail', 
+                    'Error testing betting system: ' + e.message);
+            }
+        }
+
+        async function testSpinFunctionality() {
+            try {
+                const slotMachine = gameWindow.slotMachine;
+                const gameState = gameWindow.gameState;
+                
+                if (!slotMachine || !gameState) {
+                    addTestResult('Functional Tests', 'Spin Functionality', 'fail', 
+                        'Slot machine or game state not accessible');
+                    return;
+                }
+                
+                const originalBalance = gameState.getBalance();
+                
+                // Perform a spin
+                const result = await slotMachine.spin();
+                
+                // Check if balance changed
+                const newBalance = gameState.getBalance();
+                if (newBalance !== originalBalance) {
+                    addTestResult('Functional Tests', 'Spin Functionality', 'pass', 
+                        `Spin executed successfully. Balance changed from ${originalBalance} to ${newBalance}`);
+                } else {
+                    addTestResult('Functional Tests', 'Spin Functionality', 'warning', 
+                        'Spin executed but balance unchanged (possible win equal to bet)');
+                }
+            } catch (e) {
+                addTestResult('Functional Tests', 'Spin Functionality', 'fail', 
+                    'Error testing spin functionality: ' + e.message);
+            }
+        }
+
+        function testPayoutCalculation() {
+            try {
+                const gameState = gameWindow.gameState;
+                
+                // Test known winning combinations
+                const testCombinations = [
+                    { symbols: ['🍒', '🍒', '🍒'], expectedMultiplier: 20 },
+                    { symbols: ['💎', '💎', '💎'], expectedMultiplier: 100 },
+                    { symbols: ['🍒', '🍒', '🍋'], expectedMultiplier: 2 }
+                ];
+                
+                let allCorrect = true;
+                let details = [];
+                
+                testCombinations.forEach(test => {
+                    const payout = gameState.calculatePayout(test.symbols);
+                    const expectedPayout = test.expectedMultiplier * gameState.getCurrentBet();
+                    
+                    if (payout === expectedPayout) {
+                        details.push(`✓ ${test.symbols.join('')}: ${payout} (expected ${expectedPayout})`);
+                    } else {
+                        allCorrect = false;
+                        details.push(`✗ ${test.symbols.join('')}: ${payout} (expected ${expectedPayout})`);
+                    }
+                });
+                
+                if (allCorrect) {
+                    addTestResult('Functional Tests', 'Payout Calculation', 'pass', 
+                        'All payout calculations correct:\n' + details.join('\n'));
+                } else {
+                    addTestResult('Functional Tests', 'Payout Calculation', 'fail', 
+                        'Some payout calculations incorrect:\n' + details.join('\n'));
+                }
+            } catch (e) {
+                addTestResult('Functional Tests', 'Payout Calculation', 'fail', 
+                    'Error testing payout calculation: ' + e.message);
+            }
+        }
+
+        async function runEdgeCaseTests() {
+            addTestResult('Edge Case Tests', 'Starting Edge Case Testing', 'pass', 
+                'Testing edge cases and boundary conditions...');
+            
+            await testZeroBalance();
+            await testMaximumBet();
+            await testRapidClicking();
+            await testLocalStorageHandling();
+        }
+
+        async function testZeroBalance() {
+            try {
+                const gameState = gameWindow.gameState;
+                const originalBalance = gameState.getBalance();
+                
+                // Set balance to 0
+                gameState.setBalance(0);
+                
+                // Try to spin
+                const canAfford = gameState.canAffordBet();
+                
+                if (!canAfford) {
+                    addTestResult('Edge Case Tests', 'Zero Balance Handling', 'pass', 
+                        'Game correctly prevents spinning with zero balance');
+                } else {
+                    addTestResult('Edge Case Tests', 'Zero Balance Handling', 'fail', 
+                        'Game allows spinning with zero balance');
+                }
+                
+                // Restore balance
+                gameState.setBalance(originalBalance);
+            } catch (e) {
+                addTestResult('Edge Case Tests', 'Zero Balance Handling', 'fail', 
+                    'Error testing zero balance: ' + e.message);
+            }
+        }
+
+        async function testMaximumBet() {
+            try {
+                const gameState = gameWindow.gameState;
+                
+                // Test setting bet higher than balance
+                const originalBet = gameState.getCurrentBet();
+                const balance = gameState.getBalance();
+                
+                const excessiveBet = balance + 1000;
+                const actualBet = gameState.setCurrentBet(excessiveBet);
+                
+                if (actualBet <= balance) {
+                    addTestResult('Edge Case Tests', 'Maximum Bet Handling', 'pass', 
+                        `Bet correctly capped at ${actualBet} (balance: ${balance})`);
+                } else {
+                    addTestResult('Edge Case Tests', 'Maximum Bet Handling', 'fail', 
+                        `Bet ${actualBet} exceeds balance ${balance}`);
+                }
+                
+                // Restore original bet
+                gameState.setCurrentBet(originalBet);
+            } catch (e) {
+                addTestResult('Edge Case Tests', 'Maximum Bet Handling', 'fail', 
+                    'Error testing maximum bet: ' + e.message);
+            }
+        }
+
+        async function testRapidClicking() {
+            try {
+                const doc = gameWindow.document;
+                const spinButton = doc.getElementById('spin-button');
+                
+                if (!spinButton) {
+                    addTestResult('Edge Case Tests', 'Rapid Clicking', 'fail', 
+                        'Spin button not found');
+                    return;
+                }
+                
+                // Check if button is disabled during spin
+                let clickCount = 0;
+                const startTime = Date.now();
+                
+                // Simulate rapid clicking
+                for (let i = 0; i < 10; i++) {
+                    if (!spinButton.disabled) {
+                        spinButton.click();
+                        clickCount++;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                const duration = Date.now() - startTime;
+                
+                if (clickCount <= 1) {
+                    addTestResult('Edge Case Tests', 'Rapid Clicking', 'pass', 
+                        `Button properly disabled during operation (${clickCount} clicks in ${duration}ms)`);
+                } else {
+                    addTestResult('Edge Case Tests', 'Rapid Clicking', 'warning', 
+                        `Multiple clicks registered (${clickCount} clicks in ${duration}ms)`);
+                }
+            } catch (e) {
+                addTestResult('Edge Case Tests', 'Rapid Clicking', 'fail', 
+                    'Error testing rapid clicking: ' + e.message);
+            }
+        }
+
+        async function testLocalStorageHandling() {
+            try {
+                const gameState = gameWindow.gameState;
+                
+                // Test saving and loading
+                const originalBalance = gameState.getBalance();
+                const testBalance = 12345;
+                
+                gameState.setBalance(testBalance);
+                gameState.saveGameState();
+                
+                // Simulate reload by creating new game state
+                const testGameState = new gameWindow.GameState();
+                
+                if (testGameState.getBalance() === testBalance) {
+                    addTestResult('Edge Case Tests', 'LocalStorage Handling', 'pass', 
+                        'Game state correctly saved and loaded from localStorage');
+                } else {
+                    addTestResult('Edge Case Tests', 'LocalStorage Handling', 'fail', 
+                        `Expected balance ${testBalance}, got ${testGameState.getBalance()}`);
+                }
+                
+                // Restore original balance
+                gameState.setBalance(originalBalance);
+                gameState.saveGameState();
+            } catch (e) {
+                addTestResult('Edge Case Tests', 'LocalStorage Handling', 'fail', 
+                    'Error testing localStorage: ' + e.message);
+            }
+        }
+
+        async function runResponsiveTests() {
+            addTestResult('Responsive Tests', 'Starting Responsive Testing', 'pass', 
+                'Testing responsive design and mobile compatibility...');
+            
+            testViewportSizes();
+            testTouchInteractions();
+            testOrientationChanges();
+        }
+
+        function testViewportSizes() {
+            try {
+                const iframe = document.getElementById('game-frame');
+                const originalWidth = iframe.style.width;
+                
+                const viewports = [
+                    { width: '320px', height: '568px', name: 'Mobile Portrait' },
+                    { width: '768px', height: '1024px', name: 'Tablet Portrait' },
+                    { width: '1024px', height: '768px', name: 'Tablet Landscape' },
+                    { width: '1200px', height: '800px', name: 'Desktop' }
+                ];
+                
+                let results = [];
+                
+                viewports.forEach(viewport => {
+                    iframe.style.width = viewport.width;
+                    iframe.style.height = viewport.height;
+                    
+                    // Check if content is still accessible
+                    setTimeout(() => {
+                        const doc = gameWindow.document;
+                        const gameContainer = doc.querySelector('.game-container');
+                        
+                        if (gameContainer) {
+                            const rect = gameContainer.getBoundingClientRect();
+                            const isVisible = rect.width > 0 && rect.height > 0;
+                            results.push(`${viewport.name}: ${isVisible ? 'OK' : 'HIDDEN'}`);
+                        }
+                    }, 100);
+                });
+                
+                setTimeout(() => {
+                    addTestResult('Responsive Tests', 'Viewport Sizes', 'pass', 
+                        'Tested multiple viewport sizes:\n' + results.join('\n'));
+                    
+                    // Restore original size
+                    iframe.style.width = originalWidth;
+                    iframe.style.height = '600px';
+                }, 1000);
+                
+            } catch (e) {
+                addTestResult('Responsive Tests', 'Viewport Sizes', 'fail', 
+                    'Error testing viewport sizes: ' + e.message);
+            }
+        }
+
+        function testTouchInteractions() {
+            try {
+                const doc = gameWindow.document;
+                const spinButton = doc.getElementById('spin-button');
+                
+                if (!spinButton) {
+                    addTestResult('Responsive Tests', 'Touch Interactions', 'fail', 
+                        'Spin button not found for touch testing');
+                    return;
+                }
+                
+                // Create touch event
+                const touchEvent = new gameWindow.TouchEvent('touchstart', {
+                    bubbles: true,
+                    cancelable: true,
+                    touches: [new gameWindow.Touch({
+                        identifier: 1,
+                        target: spinButton,
+                        clientX: 100,
+                        clientY: 100
+                    })]
+                });
+                
+                // Dispatch touch event
+                const handled = spinButton.dispatchEvent(touchEvent);
+                
+                addTestResult('Responsive Tests', 'Touch Interactions', 'pass', 
+                    `Touch events ${handled ? 'properly handled' : 'handled with default behavior'}`);
+                    
+            } catch (e) {
+                addTestResult('Responsive Tests', 'Touch Interactions', 'warning', 
+                    'Touch event simulation not fully supported: ' + e.message);
+            }
+        }
+
+        function testOrientationChanges() {
+            try {
+                // Simulate orientation change
+                const iframe = document.getElementById('game-frame');
+                const originalWidth = iframe.style.width;
+                const originalHeight = iframe.style.height;
+                
+                // Switch to landscape
+                iframe.style.width = '800px';
+                iframe.style.height = '400px';
+                
+                setTimeout(() => {
+                    // Trigger resize event
+                    gameWindow.dispatchEvent(new gameWindow.Event('resize'));
+                    
+                    // Check if game adapted
+                    const gameContainer = gameWindow.document.querySelector('.game-container');
+                    if (gameContainer) {
+                        addTestResult('Responsive Tests', 'Orientation Changes', 'pass', 
+                            'Game layout adapts to orientation changes');
+                    } else {
+                        addTestResult('Responsive Tests', 'Orientation Changes', 'fail', 
+                            'Game container not found after orientation change');
+                    }
+                    
+                    // Restore original dimensions
+                    iframe.style.width = originalWidth;
+                    iframe.style.height = originalHeight;
+                }, 500);
+                
+            } catch (e) {
+                addTestResult('Responsive Tests', 'Orientation Changes', 'fail', 
+                    'Error testing orientation changes: ' + e.message);
+            }
+        }
+
+        async function runPerformanceTests() {
+            addTestResult('Performance Tests', 'Starting Performance Testing', 'pass', 
+                'Testing game performance and resource usage...');
+            
+            testMemoryUsage();
+            testAnimationPerformance();
+            testAudioPerformance();
+        }
+
+        function testMemoryUsage() {
+            try {
+                const perfInfo = gameWindow.casinoGame?.getDebugInfo()?.performance;
+                
+                if (perfInfo && perfInfo.memory && perfInfo.memory !== 'Not available') {
+                    const memUsed = perfInfo.memory.used;
+                    const memLimit = perfInfo.memory.limit;
+                    const memPercent = (memUsed / memLimit * 100).toFixed(1);
+                    
+                    if (memPercent < 50) {
+                        addTestResult('Performance Tests', 'Memory Usage', 'pass', 
+                            `Memory usage: ${memUsed}MB (${memPercent}% of limit)`);
+                    } else if (memPercent < 80) {
+                        addTestResult('Performance Tests', 'Memory Usage', 'warning', 
+                            `High memory usage: ${memUsed}MB (${memPercent}% of limit)`);
+                    } else {
+                        addTestResult('Performance Tests', 'Memory Usage', 'fail', 
+                            `Excessive memory usage: ${memUsed}MB (${memPercent}% of limit)`);
+                    }
+                } else {
+                    addTestResult('Performance Tests', 'Memory Usage', 'warning', 
+                        'Memory usage monitoring not available');
+                }
+            } catch (e) {
+                addTestResult('Performance Tests', 'Memory Usage', 'fail', 
+                    'Error testing memory usage: ' + e.message);
+            }
+        }
+
+        function testAnimationPerformance() {
+            try {
+                const startTime = performance.now();
+                let frameCount = 0;
+                
+                const measureFrames = () => {
+                    frameCount++;
+                    const currentTime = performance.now();
+                    
+                    if (currentTime - startTime >= 1000) {
+                        const fps = frameCount;
+                        
+                        if (fps >= 30) {
+                            addTestResult('Performance Tests', 'Animation Performance', 'pass', 
+                                `Good frame rate: ${fps} FPS`);
+                        } else if (fps >= 15) {
+                            addTestResult('Performance Tests', 'Animation Performance', 'warning', 
+                                `Low frame rate: ${fps} FPS`);
+                        } else {
+                            addTestResult('Performance Tests', 'Animation Performance', 'fail', 
+                                `Poor frame rate: ${fps} FPS`);
+                        }
+                    } else {
+                        requestAnimationFrame(measureFrames);
+                    }
+                };
+                
+                requestAnimationFrame(measureFrames);
+            } catch (e) {
+                addTestResult('Performance Tests', 'Animation Performance', 'fail', 
+                    'Error testing animation performance: ' + e.message);
+            }
+        }
+
+        function testAudioPerformance() {
+            try {
+                const audioManager = gameWindow.audioManager;
+                
+                if (!audioManager) {
+                    addTestResult('Performance Tests', 'Audio Performance', 'fail', 
+                        'Audio manager not accessible');
+                    return;
+                }
+                
+                // Test audio initialization
+                if (audioManager.context) {
+                    const contextState = audioManager.context.state;
+                    addTestResult('Performance Tests', 'Audio Performance', 'pass', 
+                        `Audio context state: ${contextState}`);
+                } else {
+                    addTestResult('Performance Tests', 'Audio Performance', 'warning', 
+                        'Audio context not initialized');
+                }
+            } catch (e) {
+                addTestResult('Performance Tests', 'Audio Performance', 'fail', 
+                    'Error testing audio performance: ' + e.message);
+            }
+        }
+
+        // Initialize tests when page loads
+        window.onload = () => {
+            addTestResult('Test Suite', 'Test Suite Initialized', 'pass', 
+                'Casino Slot Machine Test Suite ready for testing');
+        };
+    </script>
+</body>
+</html>

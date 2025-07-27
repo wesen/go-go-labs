@@ -1,0 +1,252 @@
+/* VacuumMart Custom Styles */
+
+/* Product cards */
+.product-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.product-card .card-img-top {
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+/* Product detail images */
+.main-product-image {
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.thumbnail-image {
+    border-radius: 4px;
+    transition: border-color 0.2s ease;
+}
+
+.thumbnail-image:hover {
+    border-color: #007bff !important;
+}
+
+/* Cart items */
+.cart-item {
+    transition: background-color 0.2s ease;
+}
+
+.cart-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Rating stars */
+.fa-star, .fa-star-half-alt {
+    font-size: 0.9rem;
+}
+
+/* Price styling */
+.price {
+    font-size: 1.1rem;
+}
+
+/* Loading spinner */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Custom badges */
+.badge {
+    font-size: 0.75rem;
+}
+
+/* Form validation */
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.add-to-cart-btn {
+    min-width: 140px;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .product-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .search-box input {
+        width: 100% !important;
+        margin-bottom: 1rem;
+    }
+    
+    .d-flex.gap-3 {
+        flex-direction: column;
+        gap: 1rem !important;
+    }
+}
+
+/* Toast positioning */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+/* Breadcrumb styling */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-weight: bold;
+}
+
+/* Order status badges */
+.badge.bg-warning {
+    color: #000;
+}
+
+/* Quantity controls */
+.quantity-controls .form-select {
+    min-width: 70px;
+}
+
+/* Product specifications */
+.specifications-table .row {
+    border-bottom: 1px solid #eee;
+    padding: 0.5rem 0;
+}
+
+.specifications-table .row:last-child {
+    border-bottom: none;
+}
+
+/* Image gallery */
+.product-image-gallery {
+    position: sticky;
+    top: 20px;
+}
+
+/* Security notice */
+.security-notice {
+    text-align: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+/* Order summary */
+.order-summary {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+/* Account tabs */
+.list-group-item {
+    border: none;
+    border-radius: 6px !important;
+    margin-bottom: 0.25rem;
+}
+
+.list-group-item.active {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Filter sidebar */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Empty state styling */
+.text-center.py-5 i {
+    opacity: 0.5;
+}
+
+/* Utility classes */
+.gap-3 {
+    gap: 1rem !important;
+}
+
+.fw-bold {
+    font-weight: 600 !important;
+}
+
+/* Animation for add to cart */
+@keyframes addToCart {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.add-to-cart-btn.success {
+    animation: addToCart 0.3s ease;
+}
+
+/* Pagination styling */
+.pagination .page-link {
+    border-radius: 6px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.alert-info {
+    background-color: #e7f3ff;
+    color: #0066cc;
+}

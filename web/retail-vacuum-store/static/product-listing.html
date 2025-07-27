@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upright Vacuums - VacuumMart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/variables.css" rel="stylesheet">
+    <link href="css/components.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation (same as homepage) -->
+    <nav class="navbar navbar-expand-lg vm-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand vm-navbar-brand" href="homepage.html">
+                <i class="fas fa-wind text-secondary me-2"></i>VacuumMart
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link vm-nav-link" href="homepage.html">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle vm-nav-link active" href="#" role="button" data-bs-toggle="dropdown">
+                            Categories
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item active" href="#">Upright Vacuums</a></li>
+                            <li><a class="dropdown-item" href="#">Canister Vacuums</a></li>
+                            <li><a class="dropdown-item" href="#">Robot Vacuums</a></li>
+                            <li><a class="dropdown-item" href="#">Cordless Vacuums</a></li>
+                            <li><a class="dropdown-item" href="#">Commercial Vacuums</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link vm-nav-link" href="#">Brands</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link vm-nav-link" href="#">Reviews</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link vm-nav-link" href="#">Support</a>
+                    </li>
+                </ul>
+                
+                <!-- Search Bar -->
+                <div class="vm-search-bar me-3">
+                    <input type="text" class="form-control vm-search-input" placeholder="Search vacuums...">
+                    <button class="vm-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <!-- Cart & Account -->
+                <div class="d-flex align-items-center">
+                    <a href="#" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-user"></i>
+                        <span class="d-none d-md-inline ms-1">Account</span>
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary position-relative" data-bs-toggle="dropdown">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="d-none d-md-inline ms-1">Cart</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                3
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="container my-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="homepage.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="#">Categories</a></li>
+                <li class="breadcrumb-item active">Upright Vacuums</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Page Header -->
+    <div class="container mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1>Upright Vacuums</h1>
+                <p class="text-muted">Powerful cleaning performance for carpets and large homes</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end">
+                    <label class="me-2">Sort by:</label>
+                    <select class="form-select" style="width: auto;">
+                        <option>Best Sellers</option>
+                        <option>Price: Low to High</option>
+                        <option>Price: High to Low</option>
+                        <option>Customer Rating</option>
+                        <option>Newest</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div class="vm-filters">
+                    <h5 class="vm-filter-title">Filters</h5>
+                    
+                    <!-- Price Range -->
+                    <div class="vm-filter-group">
+                        <h6 class="vm-filter-title">Price Range</h6>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="price1">
+                            <label for="price1">Under $100</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="price2" checked>
+                            <label for="price2">$100 - $300</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="price3">
+                            <label for="price3">$300 - $500</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="price4">
+                            <label for="price4">Over $500</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Brand -->
+                    <div class="vm-filter-group">
+                        <h6 class="vm-filter-title">Brand</h6>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="dyson" checked>
+                            <label for="dyson">Dyson</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="shark">
+                            <label for="shark">Shark</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="bissell">
+                            <label for="bissell">Bissell</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="hoover">
+                            <label for="hoover">Hoover</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Features -->
+                    <div class="vm-filter-group">
+                        <h6 class="vm-filter-title">Features</h6>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="hepa">
+                            <label for="hepa">HEPA Filter</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="pet">
+                            <label for="pet">Pet Hair Removal</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="bagless">
+                            <label for="bagless">Bagless</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="lightweight">
+                            <label for="lightweight">Lightweight</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Rating -->
+                    <div class="vm-filter-group">
+                        <h6 class="vm-filter-title">Customer Rating</h6>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="rating5">
+                            <label for="rating5">★★★★★ & up</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="rating4">
+                            <label for="rating4">★★★★☆ & up</label>
+                        </div>
+                        <div class="vm-filter-option">
+                            <input type="checkbox" id="rating3">
+                            <label for="rating3">★★★☆☆ & up</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Grid -->
+            <div class="col-lg-9">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Showing 24 of 156 results</span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary active">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row g-4">
+                    <!-- Product 1 -->
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Dyson Ball">
+                                <span class="vm-product-badge bg-danger text-white">Best Seller</span>
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Dyson Ball Animal 2</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★★★ <small class="text-muted">(324 reviews)</small>
+                                </div>
+                                <p class="card-text small">Self-adjusting cleaner head automatically adjusts between carpet and hard floors</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$299.99</span>
+                                        <span class="vm-product-price-original">$399.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-success"><i class="fas fa-shipping-fast"></i> Free Shipping</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Product 2 -->
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Shark Navigator">
+                                <span class="vm-product-badge bg-success text-white">Great Value</span>
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Shark Navigator Lift-Away Pro</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★★☆ <small class="text-muted">(189 reviews)</small>
+                                </div>
+                                <p class="card-text small">Professional results on carpets and hard floors with lift-away technology</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$179.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-success"><i class="fas fa-shipping-fast"></i> Free Shipping</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Product 3 -->
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Bissell Pet Hair">
+                                <span class="vm-product-badge bg-primary text-white">Pet Specialist</span>
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="fas fa-heart text-danger"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Bissell Pet Hair Eraser</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★★☆ <small class="text-muted">(156 reviews)</small>
+                                </div>
+                                <p class="card-text small">Specialized tools and powerful suction for pet hair removal</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$149.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-warning"><i class="fas fa-clock"></i> Only 3 left in stock</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- More products would continue here... -->
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Hoover WindTunnel">
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Hoover WindTunnel 3 Max</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★★☆ <small class="text-muted">(98 reviews)</small>
+                                </div>
+                                <p class="card-text small">3 channels of suction power with WindTunnel technology</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$129.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Shark Rotator">
+                                <span class="vm-product-badge bg-info text-white">New</span>
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Shark Rotator Professional</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★★★ <small class="text-muted">(67 reviews)</small>
+                                </div>
+                                <p class="card-text small">Anti-wrap technology and LED headlights for superior cleaning</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$249.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-xl-4">
+                        <div class="vm-product-card card h-100">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Eureka Groove">
+                                <button class="btn btn-sm btn-light position-absolute" style="top: 10px; right: 10px;">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Eureka Groove Lightweight</h5>
+                                <div class="vm-review-stars mb-2">
+                                    ★★★☆☆ <small class="text-muted">(45 reviews)</small>
+                                </div>
+                                <p class="card-text small">Budget-friendly option with reliable performance</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="vm-product-price">$79.99</span>
+                                    </div>
+                                    <button class="btn vm-btn-cart btn-sm">Add to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">1</span>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">3</a>
+                        </li>
+                        <li class="page-item">
+                            <span class="page-link">...</span>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">7</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (same as homepage) -->
+    <footer class="bg-dark text-light py-5 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5>VacuumMart</h5>
+                    <p>Your trusted partner for premium vacuum cleaners and home cleaning solutions.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h6>Shop</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Upright Vacuums</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Robot Vacuums</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Cordless Vacuums</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Commercial</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h6>Support</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Customer Service</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Returns</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h6>Contact</h6>
+                    <p>1-800-VACUUM<br>support@vacuummart.com</p>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p>&copy; 2025 VacuumMart. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

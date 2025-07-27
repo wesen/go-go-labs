@@ -1,0 +1,22 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+  log_level: "info"
+  
+database:
+  driver: "sqlite3"
+  dsn: "./db/vacuum_store.db"
+
+logging:
+  level: "info"
+  format: "console"
+  output: "stdout"
+
+session:
+  secret: "demo-secret-for-testing-only"
+  duration: 86400
+  secure: false
+
+storage:
+  type: "local"
+  local_path: "./uploads"

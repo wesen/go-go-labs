@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - VacuumMart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/variables.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg vm-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand vm-navbar-brand" href="/">
+                <i class="fas fa-wind text-secondary me-2"></i>VacuumMart
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="vm-search-bar mx-auto d-none d-lg-flex">
+                    <input type="text" class="form-control vm-search-input" placeholder="Search vacuum cleaners...">
+                    <button class="vm-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/products">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/cart">Cart (<span id="navCartCount">0</span>)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/account">
+                            <i class="fas fa-user"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="bg-light py-2">
+        <div class="container">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
+            </ol>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- Progress Indicator -->
+        <div class="checkout-progress mb-4">
+            <div class="d-flex justify-content-between">
+                <div class="step active">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Shopping Cart</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Checkout</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Order Complete</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Shopping Cart (<span id="cartItemCount">0</span> items)</h4>
+                        <button class="btn btn-outline-danger btn-sm" id="clearCartBtn">
+                            <i class="fas fa-trash me-1"></i>Clear Cart
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Empty Cart State -->
+                        <div id="emptyCartState" class="text-center py-5">
+                            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                            <h3>Your cart is empty</h3>
+                            <p class="text-muted mb-4">Add some amazing vacuum cleaners to get started!</p>
+                            <a href="/products" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search me-2"></i>Shop Now
+                            </a>
+                        </div>
+
+                        <!-- Cart Items List -->
+                        <div id="cartItemsList" style="display: none;">
+                            <!-- Cart items will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommended Products -->
+                <div class="card mt-4" id="recommendedSection" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>Recommended for You
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="recommendedProducts">
+                            <!-- Recommended products will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card sticky-top" style="top: 100px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Promo Code -->
+                        <div class="mb-3">
+                            <label for="promoCode" class="form-label">Promo Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="promoCode" placeholder="Enter code">
+                                <button class="btn btn-outline-secondary" type="button" id="applyPromoBtn">Apply</button>
+                            </div>
+                            <div id="promoMessage" class="mt-2" style="display: none;"></div>
+                        </div>
+
+                        <!-- Shipping Calculator -->
+                        <div class="mb-3">
+                            <label for="zipCode" class="form-label">Shipping to</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="zipCode" placeholder="Zip code">
+                                <button class="btn btn-outline-secondary" type="button" id="calculateShippingBtn">Calculate</button>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Order Totals -->
+                        <div class="order-totals">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal (<span id="summaryItemCount">0</span> items):</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2" id="discountRow" style="display: none;">
+                                <span class="text-success">Discount:</span>
+                                <span class="text-success" id="discountAmount">-$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Shipping:</span>
+                                <span id="shippingCost">FREE</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tax:</span>
+                                <span id="tax">$0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-3">
+                                <strong>Total:</strong>
+                                <strong class="text-primary fs-4" id="total">$0.00</strong>
+                            </div>
+                        </div>
+
+                        <!-- Savings Banner -->
+                        <div class="alert alert-success" id="savingsBanner" style="display: none;">
+                            <small class="fw-bold">
+                                <i class="fas fa-tag me-1"></i>You're saving $<span id="totalSavings">0.00</span>!
+                            </small>
+                        </div>
+
+                        <!-- Checkout Button -->
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg mb-2" id="checkoutBtn" disabled>
+                                <i class="fas fa-lock me-2"></i>Proceed to Checkout
+                            </button>
+                            <a href="/products" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                            </a>
+                        </div>
+
+                        <!-- Trust Signals -->
+                        <div class="trust-signals mt-4">
+                            <div class="row text-center">
+                                <div class="col-6 mb-2">
+                                    <span class="vm-trust-badge d-block small">
+                                        <i class="fas fa-lock"></i><br>Secure Checkout
+                                    </span>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <span class="vm-trust-badge d-block small">
+                                        <i class="fas fa-undo"></i><br>Free Returns
+                                    </span>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <span class="vm-trust-badge d-block small">
+                                        <i class="fas fa-shipping-fast"></i><br>Fast Shipping
+                                    </span>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <span class="vm-trust-badge d-block small">
+                                        <i class="fas fa-headset"></i><br>24/7 Support
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-wind text-secondary me-2"></i>VacuumMart</h5>
+                    <p>Your trusted partner for premium vacuum cleaners and cleaning solutions.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/products" class="text-light">Products</a></li>
+                        <li><a href="/cart" class="text-light">Shopping Cart</a></li>
+                        <li><a href="/account" class="text-light">My Account</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/cart.js"></script>
+</body>
+</html>

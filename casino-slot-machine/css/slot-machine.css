@@ -1,0 +1,652 @@
+/* Slot Machine Styles */
+.slot-machine {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.slot-machine-frame {
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 
+        inset 0 0 50px rgba(0, 0, 0, 0.5),
+        0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 5px solid #ffd700;
+    position: relative;
+}
+
+.slot-machine-frame::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, #ffd700, #ffed4a, #ffd700);
+    border-radius: 25px;
+    z-index: -1;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+    to { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+}
+
+/* Reels container */
+.reels-container {
+    display: flex;
+    gap: 15px;
+    background: #000;
+    padding: 20px;
+    border-radius: 15px;
+    border: 3px solid #333;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.reels-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    animation: shine 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Individual reels */
+.reel {
+    flex: 1;
+    height: 200px;
+    background: linear-gradient(180deg, #1a1a1a, #333);
+    border: 2px solid #555;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.reel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(180deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            transparent 20%, 
+            transparent 80%, 
+            rgba(0, 0, 0, 0.2) 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Symbols */
+.symbol {
+    font-size: 4rem;
+    line-height: 1;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-shadow: 
+        0 0 10px rgba(255, 255, 255, 0.5),
+        2px 2px 4px rgba(0, 0, 0, 0.8);
+    position: relative;
+    z-index: 1;
+}
+
+.symbol.winning {
+    animation: winPulse 1s ease-in-out infinite;
+    transform: scale(1.2);
+}
+
+@keyframes winPulse {
+    0%, 100% { 
+        transform: scale(1.2);
+        filter: brightness(1);
+    }
+    50% { 
+        transform: scale(1.3);
+        filter: brightness(1.5) drop-shadow(0 0 20px currentColor);
+    }
+}
+
+/* Enhanced reel spinning animation with depth */
+.reel.spinning {
+    animation: reelSpin 0.08s linear infinite;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    box-shadow: 
+        inset 0 0 30px rgba(255, 215, 0, 0.2),
+        0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+@keyframes reelSpin {
+    0% { 
+        transform: translateY(0) rotateZ(0deg) rotateX(0deg);
+        border-color: #555;
+    }
+    25% { 
+        transform: translateY(-20px) rotateZ(1deg) rotateX(2deg);
+        border-color: #777;
+    }
+    50% { 
+        transform: translateY(-40px) rotateZ(2deg) rotateX(1deg);
+        border-color: #666;
+    }
+    75% { 
+        transform: translateY(-60px) rotateZ(1deg) rotateX(-1deg);
+        border-color: #777;
+    }
+    100% { 
+        transform: translateY(-80px) rotateZ(0deg) rotateX(0deg);
+        border-color: #555;
+    }
+}
+
+.reel.spinning .symbol {
+    filter: blur(3px);
+    animation: symbolBlur 0.08s linear infinite;
+    transform-style: preserve-3d;
+}
+
+@keyframes symbolBlur {
+    0% { 
+        transform: translateY(0) rotateX(0deg) scale(1);
+        opacity: 1;
+    }
+    25% { 
+        transform: translateY(-20px) rotateX(45deg) scale(0.9);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translateY(-40px) rotateX(90deg) scale(0.8);
+        opacity: 0.6;
+    }
+    75% { 
+        transform: translateY(-60px) rotateX(135deg) scale(0.9);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: translateY(-80px) rotateX(180deg) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Payline */
+.payline {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        #ffd700 20%, 
+        #ffd700 80%, 
+        transparent);
+    transform: translateY(-50%);
+    border-radius: 2px;
+    box-shadow: 
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.4);
+    z-index: 3;
+}
+
+.payline.winning {
+    animation: paylineWin 1s ease-in-out infinite;
+}
+
+@keyframes paylineWin {
+    0%, 100% { 
+        box-shadow: 
+            0 0 10px rgba(255, 215, 0, 0.8),
+            0 0 20px rgba(255, 215, 0, 0.4);
+    }
+    50% { 
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 1),
+            0 0 40px rgba(255, 215, 0, 0.8),
+            0 0 60px rgba(255, 215, 0, 0.6);
+    }
+}
+
+/* Machine decorations */
+.slot-machine-frame::after {
+    content: '🎰';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    background: #2c3e50;
+    padding: 10px;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+}
+
+/* Enhanced reel stopping effects */
+.reel.stopping {
+    animation: reelStop 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes reelStop {
+    0% { 
+        transform: translateY(0) scale(1);
+        filter: blur(3px);
+        box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    30% { 
+        transform: translateY(-5px) scale(1.05);
+        filter: blur(2px);
+        box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.2);
+    }
+    60% { 
+        transform: translateY(15px) scale(0.98);
+        filter: blur(1px);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.15);
+    }
+    80% { 
+        transform: translateY(-3px) scale(1.02);
+        filter: blur(0.5px);
+        box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+    100% { 
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+        box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.05);
+    }
+}
+
+.reel.bounce {
+    animation: reelBounce 0.6s ease-out;
+}
+
+@keyframes reelBounce {
+    0% { 
+        transform: scale(1);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    20% { 
+        transform: scale(1.08);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    40% { 
+        transform: scale(0.95);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+    60% { 
+        transform: scale(1.03);
+        box-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+    }
+    80% { 
+        transform: scale(0.98);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+    100% { 
+        transform: scale(1);
+        box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+    }
+}
+
+/* Win celebration effects */
+.slot-machine.celebration {
+    animation: machineShake 0.5s ease-in-out, celebrationGlow 2s ease-in-out;
+}
+
+@keyframes machineShake {
+    0%, 100% { transform: translateX(0) scale(1); }
+    25% { transform: translateX(-5px) scale(1.02); }
+    50% { transform: translateX(0) scale(1.05); }
+    75% { transform: translateX(5px) scale(1.02); }
+}
+
+@keyframes celebrationGlow {
+    0%, 100% { 
+        filter: brightness(1) saturate(1);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+    50% { 
+        filter: brightness(1.3) saturate(1.5);
+        box-shadow: 
+            0 0 40px rgba(255, 215, 0, 0.8),
+            0 0 80px rgba(255, 255, 255, 0.4);
+    }
+}
+
+.reels-container.jackpot {
+    animation: jackpotGlow 1s ease-in-out infinite;
+}
+
+@keyframes jackpotGlow {
+0%, 100% {
+border-color: #ffd700;
+box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+50% {
+border-color: #fff;
+box-shadow:
+0 0 40px rgba(255, 215, 0, 0.8),
+0 0 60px rgba(255, 255, 255, 0.5);
+}
+}
+
+/* Particle effects for wins */
+.particles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #ffd700;
+    border-radius: 50%;
+    animation: particleFall 2s ease-in-out forwards;
+    opacity: 0;
+}
+
+.particle.star {
+    font-size: 12px;
+    width: auto;
+    height: auto;
+    background: none;
+}
+
+.particle.coin {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    border: 1px solid #cc9900;
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes particleFall {
+    0% {
+        opacity: 1;
+        transform: translateY(-20px) translateX(0) rotate(0deg) scale(0);
+    }
+    10% {
+        transform: translateY(0) translateX(0) rotate(180deg) scale(1);
+    }
+    90% {
+        opacity: 1;
+        transform: translateY(300px) translateX(var(--drift, 0px)) rotate(720deg) scale(0.8);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(350px) translateX(var(--drift, 0px)) rotate(900deg) scale(0);
+    }
+}
+
+/* Enhanced symbol winning effects */
+.symbol.winning.win-jackpot {
+    animation: jackpotPulse 1s ease-in-out infinite;
+    filter: brightness(1.8) saturate(1.5) drop-shadow(0 0 25px currentColor);
+}
+
+.symbol.winning.win-big {
+    animation: bigWinPulse 0.8s ease-in-out infinite;
+    filter: brightness(1.5) saturate(1.3) drop-shadow(0 0 15px currentColor);
+}
+
+.symbol.winning.win-medium {
+    animation: mediumWinPulse 0.6s ease-in-out infinite;
+    filter: brightness(1.3) saturate(1.2) drop-shadow(0 0 10px currentColor);
+}
+
+@keyframes jackpotPulse {
+    0%, 100% { 
+        transform: scale(1.3) rotate(0deg);
+        text-shadow: 
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 30px currentColor;
+    }
+    50% { 
+        transform: scale(1.5) rotate(5deg);
+        text-shadow: 
+            0 0 15px currentColor,
+            0 0 25px currentColor,
+            0 0 35px currentColor,
+            0 0 45px rgba(255, 255, 255, 0.8);
+    }
+}
+
+@keyframes bigWinPulse {
+    0%, 100% { 
+        transform: scale(1.2) rotate(0deg);
+    }
+    50% { 
+        transform: scale(1.4) rotate(-3deg);
+    }
+}
+
+@keyframes mediumWinPulse {
+    0%, 100% { 
+        transform: scale(1.1);
+    }
+    50% { 
+        transform: scale(1.25);
+    }
+}
+
+/* Coin cascade effect */
+.coin-cascade {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.falling-coin {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(45deg, #ffd700 0%, #ffed4a 50%, #ffd700 100%);
+    border-radius: 50%;
+    border: 2px solid #cc9900;
+    animation: coinFall 1.5s ease-in forwards;
+    opacity: 0;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    color: #996600;
+    font-weight: bold;
+}
+
+@keyframes coinFall {
+    0% {
+        opacity: 1;
+        transform: translateY(-30px) rotateY(0deg) scale(0.5);
+    }
+    20% {
+        transform: translateY(0) rotateY(180deg) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(250px) rotateY(720deg) scale(0.8);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(300px) rotateY(900deg) scale(0.3);
+    }
+}
+
+/* Lightning effect for jackpots */
+.lightning-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 12;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 30%),
+        radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.3) 0%, transparent 30%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    animation: lightning 0.2s ease-in-out 3;
+    opacity: 0;
+}
+
+@keyframes lightning {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* Advanced win level effects */
+.reels-container.effect-jackpot {
+    animation: 
+        jackpotGlow 0.8s ease-in-out infinite,
+        rainbowBorder 3s linear infinite;
+    border-width: 5px;
+}
+
+.reels-container.effect-mega {
+    animation: 
+        megaWinGlow 1s ease-in-out infinite,
+        pulseBorder 2s ease-in-out infinite;
+    border-width: 4px;
+}
+
+.reels-container.effect-big {
+    animation: 
+        bigWinGlow 1.2s ease-in-out infinite;
+    border-width: 3px;
+}
+
+@keyframes rainbowBorder {
+    0% { border-color: #ff0000; }
+    16.67% { border-color: #ff8800; }
+    33.33% { border-color: #ffd700; }
+    50% { border-color: #00ff00; }
+    66.67% { border-color: #0088ff; }
+    83.33% { border-color: #8800ff; }
+    100% { border-color: #ff0000; }
+}
+
+@keyframes megaWinGlow {
+    0%, 100% {
+        border-color: #ffd700;
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.6),
+            inset 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+        border-color: #fff;
+        box-shadow:
+            0 0 40px rgba(255, 215, 0, 1),
+            0 0 60px rgba(255, 255, 255, 0.6),
+            inset 0 0 30px rgba(255, 215, 0, 0.4);
+    }
+}
+
+@keyframes bigWinGlow {
+    0%, 100% {
+        border-color: #ffd700;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        border-color: #ffed4a;
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+    }
+}
+
+@keyframes pulseBorder {
+    0%, 100% { border-width: 4px; }
+    50% { border-width: 6px; }
+}
+
+/* Enhanced screen flash effects */
+.screen-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.screen-flash.jackpot {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    animation: flashJackpot 0.1s ease-in-out 5;
+}
+
+.screen-flash.mega {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    animation: flashMega 0.15s ease-in-out 3;
+}
+
+@keyframes flashJackpot {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+@keyframes flashMega {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* Animated background sparkles */
+.sparkle-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.sparkle {
+    position: absolute;
+    color: #ffd700;
+    font-size: 8px;
+    animation: sparkleFloat 3s ease-in-out infinite;
+    opacity: 0;
+}
+
+@keyframes sparkleFloat {
+    0%, 100% { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.5) rotate(0deg);
+    }
+    10% { 
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(180deg);
+    }
+    90% { 
+        opacity: 1;
+        transform: translateY(-20px) scale(0.8) rotate(360deg);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateY(-40px) scale(0.3) rotate(540deg);
+    }
+}

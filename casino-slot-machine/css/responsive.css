@@ -1,0 +1,434 @@
+/* Responsive Design */
+
+/* Large screens (1200px and up) */
+@media (min-width: 1200px) {
+    .game-main {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .slot-machine {
+        max-width: 700px;
+    }
+    
+    .game-info {
+        flex: 0 0 300px;
+    }
+}
+
+/* Medium screens (768px to 1199px) */
+@media (max-width: 1199px) {
+    .game-container {
+        padding: 15px;
+    }
+    
+    .game-header h1 {
+        font-size: 2.2rem;
+    }
+    
+    .player-stats {
+        gap: 20px;
+        font-size: 1.1rem;
+    }
+    
+    .game-main {
+        gap: 20px;
+    }
+    
+    .game-info {
+        flex: 0 0 220px;
+    }
+    
+    .paytable {
+        padding: 15px;
+    }
+}
+
+/* Tablet screens (768px to 991px) */
+@media (max-width: 991px) {
+    .game-main {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .slot-machine {
+        order: 1;
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .game-info {
+        order: 2;
+        flex: none;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 20px;
+    }
+    
+    .paytable {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .payout-row {
+        padding: 10px;
+        margin: 5px 0;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+    
+    .slot-machine-frame {
+        padding: 25px;
+    }
+    
+    .reels-container {
+        padding: 15px;
+        gap: 12px;
+    }
+    
+    .symbol {
+        font-size: 3.5rem;
+    }
+}
+
+/* Small tablets and large phones (576px to 767px) */
+@media (max-width: 767px) {
+    .game-container {
+        padding: 10px;
+    }
+    
+    .game-header {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .player-stats {
+        flex-direction: column;
+        gap: 10px;
+        font-size: 1rem;
+    }
+    
+    .balance, .last-win {
+        padding: 8px 15px;
+    }
+    
+    .slot-machine-frame {
+        padding: 20px;
+        margin: 0 5px;
+    }
+    
+    .reels-container {
+        padding: 12px;
+        gap: 8px;
+    }
+    
+    .reel {
+        height: 160px;
+    }
+    
+    .symbol {
+        font-size: 3rem;
+    }
+    
+    .betting-controls {
+        margin-top: 20px;
+    }
+    
+    .bet-presets {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .bet-preset {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .spin-button {
+        width: 120px;
+        height: 120px;
+        font-size: 1rem;
+    }
+    
+    .button-text {
+        font-size: 1.2rem;
+    }
+    
+    .button-cost {
+        font-size: 0.9rem;
+    }
+    
+    .paytable h3 {
+        font-size: 1.1rem;
+    }
+    
+    .symbols {
+        font-size: 1rem;
+    }
+    
+    .payout {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile phones (up to 575px) */
+@media (max-width: 575px) {
+    .game-container {
+        padding: 5px;
+    }
+    
+    .game-header {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .player-stats {
+        font-size: 0.9rem;
+    }
+    
+    .balance, .last-win {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+    
+    .slot-machine-frame {
+        padding: 15px;
+        margin: 0;
+    }
+    
+    .reels-container {
+        padding: 10px;
+        gap: 6px;
+    }
+    
+    .reel {
+        height: 140px;
+    }
+    
+    .symbol {
+        font-size: 2.5rem;
+    }
+    
+    .payline {
+        left: 15px;
+        right: 15px;
+    }
+    
+    .bet-amount label {
+        font-size: 1rem;
+    }
+    
+    #bet-input {
+        width: 80px;
+        padding: 8px;
+        font-size: 1rem;
+    }
+    
+    .bet-presets {
+        gap: 5px;
+    }
+    
+    .bet-preset {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .spin-button {
+        width: 100px;
+        height: 100px;
+        font-size: 0.9rem;
+    }
+    
+    .button-text {
+        font-size: 1rem;
+    }
+    
+    .button-cost {
+        font-size: 0.8rem;
+    }
+    
+    .paytable {
+        padding: 12px;
+    }
+    
+    .paytable h3 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+    
+    .payout-row {
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .symbols {
+        font-size: 0.9rem;
+    }
+    
+    .payout {
+        font-size: 0.8rem;
+    }
+    
+    .game-messages {
+        padding: 10px;
+        min-height: 50px;
+    }
+    
+    #message-display {
+        font-size: 1rem;
+    }
+}
+
+/* Extra small devices (up to 400px) */
+@media (max-width: 400px) {
+    .game-header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .slot-machine-frame {
+        padding: 12px;
+    }
+    
+    .reels-container {
+        padding: 8px;
+        gap: 4px;
+    }
+    
+    .reel {
+        height: 120px;
+    }
+    
+    .symbol {
+        font-size: 2rem;
+    }
+    
+    .spin-button {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .button-text {
+        font-size: 0.9rem;
+    }
+    
+    .button-cost {
+        font-size: 0.7rem;
+    }
+    
+    .bet-preset {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    
+    #bet-input {
+        width: 70px;
+        padding: 6px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Landscape orientation adjustments for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .game-container {
+        padding: 5px;
+    }
+    
+    .game-header {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.3rem;
+        margin-bottom: 5px;
+    }
+    
+    .player-stats {
+        flex-direction: row;
+        gap: 15px;
+        font-size: 0.8rem;
+    }
+    
+    .game-main {
+        flex-direction: row;
+        gap: 15px;
+    }
+    
+    .slot-machine {
+        flex: 1;
+    }
+    
+    .game-info {
+        flex: 0 0 200px;
+        margin-top: 0;
+    }
+    
+    .slot-machine-frame {
+        padding: 10px;
+    }
+    
+    .reels-container {
+        padding: 8px;
+    }
+    
+    .reel {
+        height: 100px;
+    }
+    
+    .symbol {
+        font-size: 2rem;
+    }
+    
+    .betting-controls {
+        margin-top: 10px;
+    }
+    
+    .spin-button {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .paytable {
+        padding: 10px;
+    }
+    
+    .paytable h3 {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    .payout-row {
+        padding: 4px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .game-container {
+        background: white;
+        color: black;
+    }
+    
+    .slot-machine-frame,
+    .game-header,
+    .paytable {
+        background: white;
+        box-shadow: none;
+        border: 1px solid black;
+    }
+    
+    .spin-button,
+    .betting-controls {
+        display: none;
+    }
+}

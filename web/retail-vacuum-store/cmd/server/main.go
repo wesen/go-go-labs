@@ -1,0 +1,143 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/go-go-golems/go-go-labs/web/retail-vacuum-store/pkg/config"
+	"github.com/go-go-golems/go-go-labs/web/retail-vacuum-store/pkg/handlers"
+	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var (
+	cfgFile  string
+	logLevel string
+	port     int
+)
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to execute command")
+	}
+}
+
+var rootCmd = &cobra.Command{
+	Use:   "retail-vacuum-store",
+	Short: "Vacuum cleaner retail store web application",
+	Long:  `A comprehensive e-commerce platform for vacuum cleaner sales with product catalog, shopping cart, and order management.`,
+	Run:   runServer,
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().IntVar(&port, "port", 8080, "Server port")
+
+	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+}
+
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("./config")
+	}
+
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err == nil {
+		log.Info().Str("config", viper.ConfigFileUsed()).Msg("Using config file")
+	}
+
+	// Setup logging
+	level, err := zerolog.ParseLevel(viper.GetString("log-level"))
+	if err != nil {
+		level = zerolog.InfoLevel
+	}
+	zerolog.SetGlobalLevel(level)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+}
+
+func runServer(cmd *cobra.Command, args []string) {
+	ctx := context.Background()
+	
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load configuration")
+	}
+
+	// Override port from command line if provided
+	if port > 0 {
+		cfg.Server.Port = port
+	}
+
+	log.Info().
+		Str("version", "0.1.0").
+		Int("port", cfg.Server.Port).
+		Str("log_level", cfg.Logging.Level).
+		Msg("Starting retail vacuum store server")
+
+	// NOTE: Database connection temporarily disabled for demo
+	// Connect to database
+	// db, err := config.ConnectDatabase(&cfg.Database)
+	// if err != nil {
+	// 	log.Fatal().Err(err).Msg("Failed to connect to database")
+	// }
+	// defer db.Close()
+
+	// Run migrations
+	// if err := config.MigrateDatabase(db); err != nil {
+	// 	log.Fatal().Err(err).Msg("Failed to migrate database")
+	// }
+
+	// Seed database with initial data
+	// if err := config.SeedDatabase(db); err != nil {
+	// 	log.Warn().Err(err).Msg("Failed to seed database (continuing anyway)")
+	// }
+
+	// Setup routes with database (use existing setup)
+	router := handlers.SetupRoutes()
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler: router,
+	}
+
+	// Graceful shutdown
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+
+		log.Info().Msg("Shutting down server...")
+		
+		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("Server shutdown error")
+		}
+	}()
+
+	log.Info().Int("port", cfg.Server.Port).Msg("Server listening")
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatal().Err(err).Msg("Server failed to start")
+	}
+
+	log.Info().Msg("Server stopped")
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio/Visual Test - Casino Slot Machine</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #1e3c72;
+            color: white;
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ffd700; 
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        button { 
+            margin: 5px; 
+            padding: 10px 20px; 
+            background: #ffd700;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #ffed4a; }
+        .log { 
+            background: #000; 
+            color: #0f0; 
+            padding: 10px; 
+            font-family: monospace; 
+            max-height: 200px; 
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎰 Casino Slot Machine - Audio/Visual Test</h1>
+    
+    <div class="test-section">
+        <h2>Audio System Tests</h2>
+        <button onclick="testReelSounds()">Test Reel Sounds</button>
+        <button onclick="testWinSounds()">Test Win Sounds</button>
+        <button onclick="testCoinEffects()">Test Coin Effects</button>
+        <button onclick="testJackpotFanfare()">Test Jackpot Fanfare</button>
+        <button onclick="toggleAudio()">Toggle Audio</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Visual Effects Tests</h2>
+        <button onclick="testScreenFlash()">Test Screen Flash</button>
+        <button onclick="testSparkles()">Test Sparkles</button>
+        <button onclick="testCoinCascade()">Test Coin Cascade</button>
+        <button onclick="testWinAnimations()">Test Win Animations</button>
+        <button onclick="testReelAnimations()">Test Reel Animations</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Integrated Tests</h2>
+        <button onclick="testBigWin()">Simulate Big Win</button>
+        <button onclick="testJackpot()">Simulate Jackpot</button>
+        <button onclick="testFullSpin()">Test Full Spin</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="log" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <!-- Include the game modules -->
+    <script src="../js/game-state.js"></script>
+    <script src="../js/audio-manager.js"></script>
+    <script src="../js/slot-machine.js"></script>
+    <script src="../js/ui-controller.js"></script>
+
+    <script>
+        // Initialize test environment
+        let audioManager, gameState;
+        let testLog = document.getElementById('log');
+        
+        function log(message) {
+            testLog.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+            testLog.scrollTop = testLog.scrollHeight;
+        }
+        
+        function clearLog() {
+            testLog.innerHTML = '';
+        }
+        
+        // Initialize components
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Initializing test environment...');
+            
+            try {
+                gameState = new GameState();
+                audioManager = new AudioManager();
+                window.audioManager = audioManager;
+                
+                log('✅ Audio Manager initialized');
+                log('✅ Game State initialized');
+                log('✅ Test environment ready');
+                
+                // Enable audio immediately for testing
+                audioManager.setEnabled(true);
+                log('🔊 Audio enabled for testing');
+                
+            } catch (error) {
+                log('❌ Failed to initialize: ' + error.message);
+            }
+        });
+        
+        // Audio Tests
+        function testReelSounds() {
+            log('Testing reel sounds...');
+            audioManager.playReelStartSound();
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(0), 500);
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(1), 700);
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(2), 900);
+            log('✅ Reel sounds test completed');
+        }
+        
+        function testWinSounds() {
+            log('Testing win sounds...');
+            audioManager.playWinSound(50, 10, 'small');
+            setTimeout(() => audioManager.playWinSound(200, 10, 'big'), 1000);
+            setTimeout(() => audioManager.playWinSound(1000, 10, 'mega'), 2000);
+            log('✅ Win sounds test completed');
+        }
+        
+        function testCoinEffects() {
+            log('Testing coin effects...');
+            audioManager.playCoinDropSound();
+            setTimeout(() => audioManager.playCoinCascadeSound(), 500);
+            log('✅ Coin effects test completed');
+        }
+        
+        function testJackpotFanfare() {
+            log('Testing jackpot fanfare...');
+            audioManager.playWinSound(5000, 10, 'jackpot');
+            log('✅ Jackpot fanfare test completed');
+        }
+        
+        function toggleAudio() {
+            const enabled = audioManager.toggle();
+            log(`🔊 Audio ${enabled ? 'enabled' : 'disabled'}`);
+        }
+        
+        // Visual Effects Tests
+        function testScreenFlash() {
+            log('Testing screen flash effects...');
+            audioManager.createScreenFlash('mega');
+            setTimeout(() => audioManager.createScreenFlash('jackpot'), 1000);
+            log('✅ Screen flash test completed');
+        }
+        
+        function testSparkles() {
+            log('Testing sparkle effects...');
+            // Create a temporary slot machine frame for sparkles
+            const frame = document.createElement('div');
+            frame.className = 'slot-machine-frame';
+            frame.style.position = 'relative';
+            frame.style.width = '300px';
+            frame.style.height = '200px';
+            frame.style.background = '#333';
+            frame.style.margin = '20px auto';
+            frame.style.borderRadius = '10px';
+            document.body.appendChild(frame);
+            
+            audioManager.createSparkleEffect(3000);
+            
+            setTimeout(() => {
+                if (frame.parentNode) {
+                    frame.parentNode.removeChild(frame);
+                }
+            }, 3500);
+            log('✅ Sparkle effects test completed');
+        }
+        
+        function testCoinCascade() {
+            log('Testing coin cascade...');
+            // Create temporary container
+            const container = document.createElement('div');
+            container.className = 'slot-machine-frame';
+            container.style.position = 'relative';
+            container.style.width = '400px';
+            container.style.height = '300px';
+            container.style.background = '#222';
+            container.style.margin = '20px auto';
+            container.style.borderRadius = '15px';
+            container.style.border = '3px solid #ffd700';
+            document.body.appendChild(container);
+            
+            // Add coin cascade CSS if not already present
+            if (!document.getElementById('test-styles')) {
+                const style = document.createElement('style');
+                style.id = 'test-styles';
+                style.textContent = `
+                    .coin-cascade { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
+                    .falling-coin { position: absolute; width: 20px; height: 20px; background: linear-gradient(45deg, #ffd700 0%, #ffed4a 50%, #ffd700 100%); border-radius: 50%; border: 2px solid #cc9900; animation: coinFall 1.5s ease-in forwards; opacity: 0; font-size: 10px; line-height: 16px; text-align: center; color: #996600; font-weight: bold; }
+                    @keyframes coinFall { 0% { opacity: 1; transform: translateY(-30px) rotateY(0deg) scale(0.5); } 20% { transform: translateY(0) rotateY(180deg) scale(1); } 80% { opacity: 1; transform: translateY(250px) rotateY(720deg) scale(0.8); } 100% { opacity: 0; transform: translateY(300px) rotateY(900deg) scale(0.3); } }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Create coin cascade
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'falling-coin';
+                    coin.textContent = '$';
+                    coin.style.left = `${Math.random() * 90 + 5}%`;
+                    coin.style.top = '-30px';
+                    coin.style.animationDelay = `${Math.random() * 0.3}s`;
+                    container.appendChild(coin);
+                    
+                    setTimeout(() => {
+                        if (coin.parentNode) coin.parentNode.removeChild(coin);
+                    }, 2000);
+                }, i * 100);
+            }
+            
+            setTimeout(() => {
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            }, 4000);
+            log('✅ Coin cascade test completed');
+        }
+        
+        function testWinAnimations() {
+            log('Testing win animations...');
+            testSparkles();
+            setTimeout(() => testCoinCascade(), 1000);
+            log('✅ Win animations test completed');
+        }
+        
+        function testReelAnimations() {
+            log('Testing reel animations...');
+            log('⚠️  Reel animations require full slot machine HTML structure');
+        }
+        
+        // Integrated Tests
+        function testBigWin() {
+            log('🎉 Simulating BIG WIN...');
+            audioManager.playWinSound(500, 10, 'big');
+            audioManager.createScreenFlash('mega');
+            setTimeout(() => audioManager.createSparkleEffect(3000), 500);
+            log('✅ Big win simulation completed');
+        }
+        
+        function testJackpot() {
+            log('🎰 Simulating JACKPOT...');
+            audioManager.playWinSound(2000, 10, 'jackpot');
+            audioManager.createScreenFlash('jackpot');
+            setTimeout(() => audioManager.createSparkleEffect(5000), 800);
+            log('✅ Jackpot simulation completed');
+        }
+        
+        function testFullSpin() {
+            log('🎲 Simulating full spin sequence...');
+            
+            // Start sounds
+            audioManager.playReelStartSound();
+            audioManager.playElectricHumSound();
+            
+            // Reel stops
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(0), 1000);
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(1), 1500);
+            setTimeout(() => audioManager.playReelStopSoundWithPitch(2), 2000);
+            
+            // Win result
+            setTimeout(() => {
+                audioManager.playWinSound(300, 10, 'medium');
+                audioManager.createSparkleEffect(2000);
+            }, 2500);
+            
+            log('✅ Full spin simulation completed');
+        }
+        
+        // Add some helpful info
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                log('💡 Click any test button to validate audio/visual features');
+                log('💡 Make sure your browser allows audio playback');
+                log('💡 Open browser console for additional debug info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

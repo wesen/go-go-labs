@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - VacuumMart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/variables.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg vm-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand vm-navbar-brand" href="/">
+                <i class="fas fa-wind text-secondary me-2"></i>VacuumMart
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="vm-search-bar mx-auto d-none d-lg-flex">
+                    <input type="text" class="form-control vm-search-input" placeholder="Search vacuum cleaners..." id="searchInput">
+                    <button class="vm-search-btn" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/products">Products</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="badge bg-secondary" id="cartCount">0</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end vm-mini-cart" id="miniCart">
+                            <div class="p-3 text-center text-muted">
+                                Your cart is empty
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/account">
+                            <i class="fas fa-user"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="bg-light py-2">
+        <div class="container">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Products</li>
+            </ol>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div class="vm-filters card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Filters</h5>
+                        <button class="btn btn-sm btn-outline-secondary" id="clearFilters">Clear All</button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Categories -->
+                        <div class="vm-filter-group mb-4">
+                            <h6 class="vm-filter-title">Categories</h6>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="cat-upright" name="category" value="upright">
+                                <label for="cat-upright">Upright Vacuums</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="cat-canister" name="category" value="canister">
+                                <label for="cat-canister">Canister Vacuums</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="cat-robot" name="category" value="robot">
+                                <label for="cat-robot">Robot Vacuums</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="cat-handheld" name="category" value="handheld">
+                                <label for="cat-handheld">Handheld Vacuums</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="cat-stick" name="category" value="stick">
+                                <label for="cat-stick">Stick Vacuums</label>
+                            </div>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="vm-filter-group mb-4">
+                            <h6 class="vm-filter-title">Price Range</h6>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="price-0-100" name="price" value="0-100">
+                                <label for="price-0-100">Under $100</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="price-100-300" name="price" value="100-300">
+                                <label for="price-100-300">$100 - $300</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="price-300-500" name="price" value="300-500">
+                                <label for="price-300-500">$300 - $500</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="price-500-plus" name="price" value="500+">
+                                <label for="price-500-plus">$500+</label>
+                            </div>
+                        </div>
+
+                        <!-- Brands -->
+                        <div class="vm-filter-group mb-4">
+                            <h6 class="vm-filter-title">Brands</h6>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="brand-dyson" name="brand" value="dyson">
+                                <label for="brand-dyson">Dyson</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="brand-shark" name="brand" value="shark">
+                                <label for="brand-shark">Shark</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="brand-bissell" name="brand" value="bissell">
+                                <label for="brand-bissell">Bissell</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="brand-hoover" name="brand" value="hoover">
+                                <label for="brand-hoover">Hoover</label>
+                            </div>
+                        </div>
+
+                        <!-- Features -->
+                        <div class="vm-filter-group">
+                            <h6 class="vm-filter-title">Features</h6>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="feature-cordless" name="feature" value="cordless">
+                                <label for="feature-cordless">Cordless</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="feature-pet" name="feature" value="pet">
+                                <label for="feature-pet">Pet Hair Removal</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="feature-hepa" name="feature" value="hepa">
+                                <label for="feature-hepa">HEPA Filter</label>
+                            </div>
+                            <div class="vm-filter-option">
+                                <input type="checkbox" id="feature-smart" name="feature" value="smart">
+                                <label for="feature-smart">Smart Features</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Area -->
+            <div class="col-lg-9">
+                <!-- Toolbar -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">Vacuum Cleaners</h1>
+                        <p class="text-muted mb-0" id="productCount">Loading products...</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- View Toggle -->
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="gridView">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="listView">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Sort -->
+                        <select class="form-select" id="sortBy" style="width: auto;">
+                            <option value="name">Name</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="rating">Customer Rating</option>
+                            <option value="newest">Newest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading products...</p>
+                </div>
+
+                <!-- Products Grid -->
+                <div id="productsGrid" class="row" style="display: none;">
+                    <!-- Products will be dynamically inserted here -->
+                </div>
+
+                <!-- Products List -->
+                <div id="productsList" class="d-none">
+                    <!-- List view products will be dynamically inserted here -->
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Product navigation" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Pagination will be dynamically generated -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trust Signals -->
+    <div class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-3 mb-3">
+                    <span class="vm-trust-badge">
+                        <i class="fas fa-shipping-fast"></i>Free Shipping
+                    </span>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <span class="vm-trust-badge">
+                        <i class="fas fa-undo"></i>30-Day Returns
+                    </span>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <span class="vm-trust-badge">
+                        <i class="fas fa-shield-alt"></i>2-Year Warranty
+                    </span>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <span class="vm-trust-badge">
+                        <i class="fas fa-lock"></i>Secure Checkout
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-wind text-secondary me-2"></i>VacuumMart</h5>
+                    <p>Your trusted partner for premium vacuum cleaners and cleaning solutions.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/products" class="text-light">Products</a></li>
+                        <li><a href="/cart" class="text-light">Shopping Cart</a></li>
+                        <li><a href="/account" class="text-light">My Account</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/products.js"></script>
+</body>
+</html>

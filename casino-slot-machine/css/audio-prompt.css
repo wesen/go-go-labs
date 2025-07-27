@@ -1,0 +1,222 @@
+/* Audio Permission Prompt Styles */
+.audio-permission-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+    animation: fadeInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.audio-permission-content {
+    background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 50%, #2c1810 100%);
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.5),
+        inset 0 0 20px rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    font-family: 'Arial', sans-serif;
+    position: relative;
+    animation: slideInUp 0.4s ease-out 0.1s both;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.audio-permission-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.audio-permission-content h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.audio-permission-content p {
+    margin: 10px 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: #e6d7c7;
+}
+
+.audio-permission-buttons {
+    margin: 25px 0 15px 0;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.audio-permission-btn {
+    padding: 12px 24px;
+    border: 2px solid;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    min-width: 140px;
+    position: relative;
+    overflow: hidden;
+}
+
+.audio-permission-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.audio-permission-btn:hover::before {
+    left: 100%;
+}
+
+.audio-enable {
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.audio-enable:hover {
+    background: rgba(0, 255, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
+}
+
+.audio-disable {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.audio-disable:hover {
+    background: rgba(255, 107, 107, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+.audio-permission-note {
+    font-size: 0.85rem;
+    color: #b8a898;
+    font-style: italic;
+    margin-top: 15px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .audio-permission-content {
+        padding: 20px;
+        max-width: 95%;
+    }
+    
+    .audio-permission-content h3 {
+        font-size: 1.3rem;
+    }
+    
+    .audio-permission-content p {
+        font-size: 0.9rem;
+    }
+    
+    .audio-permission-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .audio-permission-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .audio-permission-icon {
+        font-size: 3rem;
+    }
+}
+
+/* Dark theme compatibility */
+@media (prefers-color-scheme: dark) {
+    .audio-permission-modal {
+        background: rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* Audio button pending permission indicator */
+.audio-btn.pending-permission {
+    animation: pendingPulse 1.5s ease-in-out infinite;
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+}
+
+@keyframes pendingPulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .audio-permission-modal,
+    .audio-permission-content,
+    .audio-permission-icon,
+    .audio-permission-btn::before {
+        animation: none;
+    }
+    
+    .audio-permission-btn {
+        transition: none;
+    }
+    
+    .audio-btn.pending-permission {
+        animation: none;
+        border: 2px solid #ffd700;
+    }
+}

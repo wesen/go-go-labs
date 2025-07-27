@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - VacuumMart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/variables.css" rel="stylesheet">
+    <link href="css/components.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 vm-admin-sidebar p-0">
+                <div class="p-3">
+                    <h4 class="text-white">
+                        <i class="fas fa-wind me-2"></i>VacuumMart
+                    </h4>
+                    <small class="text-muted">Admin Panel</small>
+                </div>
+                
+                <nav class="nav flex-column px-3">
+                    <a href="#" class="nav-link vm-admin-nav-link active">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-box me-2"></i>Products
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-shopping-cart me-2"></i>Orders
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-users me-2"></i>Customers
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-warehouse me-2"></i>Inventory
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-chart-bar me-2"></i>Analytics
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-star me-2"></i>Reviews
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-percentage me-2"></i>Promotions
+                    </a>
+                    <a href="#" class="nav-link vm-admin-nav-link">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </a>
+                </nav>
+                
+                <div class="mt-auto p-3">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle w-100" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-2"></i>Admin User
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <!-- Header -->
+                <div class="bg-white border-bottom px-4 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">Dashboard</h2>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-bell"></i>
+                                <span class="position-absolute start-100 translate-middle badge rounded-pill bg-danger">
+                                    5
+                                </span>
+                            </button>
+                            <a href="homepage.html" class="btn btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>View Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Content -->
+                <div class="p-4">
+                    <!-- Stats Cards -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="vm-stat-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="vm-stat-number">$24,573</div>
+                                        <div class="vm-stat-label">Today's Sales</div>
+                                    </div>
+                                    <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-arrow-up"></i> +12.5% from yesterday
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="vm-stat-card" style="background: linear-gradient(135deg, var(--vm-accent), #059669);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="vm-stat-number">142</div>
+                                        <div class="vm-stat-label">Orders Today</div>
+                                    </div>
+                                    <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-white opacity-75">
+                                        <i class="fas fa-arrow-up"></i> +8.3% from yesterday
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="vm-stat-card" style="background: linear-gradient(135deg, var(--vm-warning), #d97706);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="vm-stat-number">1,247</div>
+                                        <div class="vm-stat-label">Products in Stock</div>
+                                    </div>
+                                    <i class="fas fa-boxes fa-2x opacity-75"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-white opacity-75">
+                                        <i class="fas fa-exclamation-triangle"></i> 23 low stock items
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="vm-stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="vm-stat-number">8,934</div>
+                                        <div class="vm-stat-label">Active Customers</div>
+                                    </div>
+                                    <i class="fas fa-users fa-2x opacity-75"></i>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-white opacity-75">
+                                        <i class="fas fa-arrow-up"></i> +234 new this month
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4">
+                        <!-- Recent Orders -->
+                        <div class="col-lg-8">
+                            <div class="card vm-admin-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Recent Orders</h5>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Order ID</th>
+                                                    <th>Customer</th>
+                                                    <th>Product</th>
+                                                    <th>Total</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>#ORD-2024-001</td>
+                                                    <td>John Smith</td>
+                                                    <td>Dyson V15 Detect</td>
+                                                    <td>$699.99</td>
+                                                    <td><span class="badge bg-success">Completed</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">View</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>#ORD-2024-002</td>
+                                                    <td>Sarah Johnson</td>
+                                                    <td>Shark Navigator</td>
+                                                    <td>$179.99</td>
+                                                    <td><span class="badge bg-warning">Processing</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">View</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>#ORD-2024-003</td>
+                                                    <td>Mike Davis</td>
+                                                    <td>Roomba i7+</td>
+                                                    <td>$599.99</td>
+                                                    <td><span class="badge bg-info">Shipped</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">View</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>#ORD-2024-004</td>
+                                                    <td>Lisa Wilson</td>
+                                                    <td>Bissell Pet Hair Eraser</td>
+                                                    <td>$149.99</td>
+                                                    <td><span class="badge bg-danger">Cancelled</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">View</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>#ORD-2024-005</td>
+                                                    <td>Robert Brown</td>
+                                                    <td>Hoover WindTunnel 3</td>
+                                                    <td>$129.99</td>
+                                                    <td><span class="badge bg-primary">New</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">View</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="col-lg-4">
+                            <div class="card vm-admin-card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Quick Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary">
+                                            <i class="fas fa-plus me-2"></i>Add New Product
+                                        </button>
+                                        <button class="btn btn-outline-primary">
+                                            <i class="fas fa-upload me-2"></i>Import Inventory
+                                        </button>
+                                        <button class="btn btn-outline-secondary">
+                                            <i class="fas fa-download me-2"></i>Export Orders
+                                        </button>
+                                        <button class="btn btn-outline-success">
+                                            <i class="fas fa-percentage me-2"></i>Create Promotion
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Low Stock Alert -->
+                            <div class="card vm-admin-card">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Dyson V15 Filters</span>
+                                            <span class="badge bg-danger">2 left</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Shark Replacement Parts</span>
+                                            <span class="badge bg-warning">5 left</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>HEPA Vacuum Bags</span>
+                                            <span class="badge bg-warning">8 left</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-warning w-100">
+                                        Reorder Stock
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Row -->
+                    <div class="row g-4 mt-4">
+                        <div class="col-lg-6">
+                            <div class="card vm-admin-card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Sales Overview</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center p-5">
+                                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Sales chart would be displayed here</p>
+                                        <small class="text-muted">Integration with Chart.js or similar library</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <div class="card vm-admin-card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Top Selling Products</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-8">
+                                            <strong>Dyson V15 Detect</strong>
+                                            <br><small class="text-muted">87 units sold</small>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" style="width: 87%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-8">
+                                            <strong>Shark Navigator</strong>
+                                            <br><small class="text-muted">64 units sold</small>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-success" style="width: 64%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-8">
+                                            <strong>Roomba i7+</strong>
+                                            <br><small class="text-muted">45 units sold</small>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-warning" style="width: 45%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <strong>Bissell Pet Hair Eraser</strong>
+                                            <br><small class="text-muted">32 units sold</small>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-info" style="width: 32%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
